@@ -3,7 +3,7 @@
     "module": "commonjs",
     "target": "ES2021",
     "lib": ["ES2021"],
-    "outDir": "backend/dist",
+    "outDir": "dist",
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
