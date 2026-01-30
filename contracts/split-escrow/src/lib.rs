@@ -352,3 +352,27 @@ impl SplitEscrowContract {
         Ok(available)
     }
 }
+
+    /// Get a participant's status in a split
+    ///
+    /// Required for DRIP escrow queries.
+    pub fn get_participant_status(
+        env: Env,
+        split_id: u64,
+        participant: Address,
+    ) -> Result<Participant, Error> {
+        if !storage::has_split(&env, split_id) {
+            return Err(Error::SplitNotFound);
+        }
+
+        let split = storage::get_split(&env, split_id);
+
+        for i in 0..split.participants.len() {
+            let p = split.participants.get(i).unwrap();
+            if p.address == participant {
+                return Ok(p);
+            }
+        }
+
+        Err(Error::ParticipantNotFound)
+    }

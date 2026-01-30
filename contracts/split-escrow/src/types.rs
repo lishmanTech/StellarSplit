@@ -7,6 +7,7 @@
 //! types as specified in issue #59.
 
 use soroban_sdk::{contracterror, contracttype, Address, Env, String, Vec};
+use soroban_sdk::{Address, Vec};
 // ============================================
 // Original Types (preserved for compatibility)
 // ============================================
@@ -331,4 +332,21 @@ pub fn create_escrow(
         deadline,
         created_at: env.ledger().timestamp(),
     }
+}
+
+#[derive(Clone)]
+pub struct Participant {
+    pub address: Address,
+    pub amount_owed: i128,
+    pub paid: bool,
+}
+
+#[derive(Clone)]
+pub struct SplitEscrow {
+    pub split_id: String,
+    pub creator: Address,
+    pub participants: Vec<Participant>,
+    pub deadline: u64,
+    pub total_amount: i128,
+    pub active: bool,
 }

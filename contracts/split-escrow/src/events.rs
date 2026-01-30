@@ -4,6 +4,7 @@
 //! These events are crucial for the backend to sync with on-chain state.
 
 use soroban_sdk::{symbol_short, Address, Env};
+use soroban_sdk::{contractevent, Address};
 
 /// Emit when the contract is initialized
 ///
@@ -78,3 +79,9 @@ pub fn emit_refund_processed(env: &Env, split_id: u64, participant: &Address, am
         (split_id, participant.clone(), amount),
     );
 }
+
+#[contractevent]
+pub fn escrow_created(split_id: String, creator: Address, total_amount: i128);
+
+#[contractevent]
+pub fn payment_received(split_id: String, participant: Address, amount: i128);

@@ -9,6 +9,39 @@
 use soroban_sdk::{contracttype, Address, Env, String};
 
 use crate::types::{Split, SplitEscrow};
+use soroban_sdk::{Env, Symbol};
+
+use crate::types::SplitEscrow;
+
+
+const ADMIN: Symbol = Symbol::new("ADMIN");
+const INIT: Symbol = Symbol::new("INIT");
+
+pub fn is_initialized(env: &Env) -> bool {
+    env.storage().instance().has(&INIT)
+}
+
+pub fn set_initialized(env: &Env) {
+    env.storage().instance().set(&INIT, &true);
+}
+
+pub fn set_admin(env: &Env, admin: &Address) {
+    env.storage().instance().set(&ADMIN, admin);
+}
+
+pub fn get_admin(env: &Env) -> Address {
+    env.storage().instance().get(&ADMIN).unwrap()
+}
+
+pub fn save_escrow(env: &Env, escrow: &SplitEscrow) {
+    env.storage()
+        .persistent()
+        .set(&escrow.split_id, escrow);
+}
+
+pub fn get_escrow(env: &Env, split_id: &String) -> Option<SplitEscrow> {
+    env.storage().persistent().get(split_id)
+}
 
 // ============================================
 // Original Storage Keys
