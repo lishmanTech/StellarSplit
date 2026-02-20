@@ -1,4 +1,5 @@
 import { DollarSign, Users, Receipt, TrendingUp } from "lucide-react";
+import { Link } from "react-router";
 
 export default function DashboardPage() {
   const stats = [
@@ -92,9 +93,10 @@ export default function DashboardPage() {
             </h2>
             <div className="space-y-4">
               {recentActivity.map((activity, index) => (
-                <div
+                <Link
+                  to={`/split/split_${index + 123}`}
                   key={index}
-                  className="flex items-center justify-between py-3 border-b last:border-b-0"
+                  className="flex items-center justify-between py-3 border-b last:border-b-0 hover:bg-gray-50 transition px-2 -mx-2 rounded cursor-pointer"
                 >
                   <div>
                     <p className="font-medium text-gray-900">{activity.name}</p>
@@ -105,7 +107,7 @@ export default function DashboardPage() {
                   <p className="font-semibold text-gray-900">
                     {activity.amount}
                   </p>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
