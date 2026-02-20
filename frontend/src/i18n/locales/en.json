@@ -52,6 +52,97 @@
             "viewReports": "View Reports"
         }
     },
+    "wizard": {
+        "pageTitle": "New Split",
+        "saveDraft": "Save Draft",
+        "draftSaved": "Saved!",
+        "back": "Back",
+        "next": "Next",
+        "createSplit": "Create Split",
+        "creating": "Creating…",
+        "steps": {
+            "basicInfo": "Basic Info",
+            "splitMethod": "Method",
+            "participants": "Participants",
+            "items": "Items",
+            "taxTip": "Tax & Tip",
+            "review": "Review"
+        },
+        "basicInfo": {
+            "title": "Basic Information",
+            "subtitle": "Give your split a name and set the total amount.",
+            "splitTitle": "Split Title",
+            "splitTitlePlaceholder": "e.g. Dinner at Nobu",
+            "currency": "Currency",
+            "totalAmount": "Total Amount"
+        },
+        "splitMethod": {
+            "title": "Split Method",
+            "subtitle": "Choose how to divide the total.",
+            "equal": "Split Equally",
+            "equalDesc": "Each person pays the same amount.",
+            "itemized": "By Item",
+            "itemizedDesc": "Assign specific items to each person.",
+            "percentage": "By Percentage",
+            "percentageDesc": "Set a custom percentage per person.",
+            "custom": "Custom Amounts",
+            "customDesc": "Enter exact amounts for each person."
+        },
+        "participants": {
+            "title": "Add Participants",
+            "subtitle": "Add everyone sharing this expense.",
+            "name": "Name",
+            "namePlaceholder": "e.g. Alice",
+            "walletAddress": "Stellar Wallet Address",
+            "walletPlaceholder": "G…",
+            "email": "Email",
+            "emailPlaceholder": "alice@example.com",
+            "percentage": "Percentage (%)",
+            "customAmount": "Custom Amount",
+            "addParticipant": "Add Participant",
+            "participantN": "Participant {{n}}",
+            "remove": "Remove participant",
+            "totalPct": "Total percentage",
+            "mustEqual100": "must equal 100%",
+            "totalCustom": "Total assigned"
+        },
+        "items": {
+            "title": "Add Items",
+            "subtitle": "List items from the receipt and assign them.",
+            "itemNamePlaceholder": "e.g. Wagyu Steak",
+            "addItem": "Add Item",
+            "removeItem": "Remove item",
+            "assignTo": "Assign to:"
+        },
+        "taxTip": {
+            "title": "Tax & Tip",
+            "subtitle": "Optionally add tax and tip to the total.",
+            "taxLabel": "Tax",
+            "tipLabel": "Tip",
+            "noTip": "No tip",
+            "subtotal": "Subtotal",
+            "grandTotal": "Grand Total"
+        },
+        "review": {
+            "title": "Review Split",
+            "subtitle": "Check the details before creating your split.",
+            "basicInfo": "Basic Info",
+            "noParticipants": "No participants added yet.",
+            "readyToSubmit": "Everything looks good — ready to create!"
+        },
+        "validation": {
+            "titleRequired": "Please enter a title for this split.",
+            "currencyRequired": "Please select a currency.",
+            "totalAmountRequired": "Please enter a total amount greater than zero.",
+            "minParticipants": "Add at least 2 participants.",
+            "participantNameRequired": "All participants must have a name.",
+            "percentageMustEqual100": "Percentages must add up to 100%.",
+            "customMustEqualTotal": "Custom amounts must add up to the total.",
+            "minOneItem": "Add at least one item.",
+            "itemNameRequired": "All items must have a name.",
+            "itemPriceRequired": "All items must have a price greater than zero."
+        }
+    },
     "languages": {
         "en": "English",
         "es": "Spanish",
