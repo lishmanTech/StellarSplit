@@ -126,9 +126,12 @@ export default function DashboardPage() {
         <div className="bg-card-theme rounded-lg shadow p-6 border border-theme mt-8">
           <h2 className="text-xl font-bold text-theme mb-4">{t("dashboard.quickActions")}</h2>
           <div className="grid grid-cols-2 gap-4">
-            <button className="bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition">
+            <Link
+              to="/create-split"
+              className="bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition text-center"
+            >
               {t("dashboard.actions.addExpense")}
-            </button>
+            </Link>
             <button className="bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 transition">
               {t("dashboard.actions.createGroup")}
             </button>
