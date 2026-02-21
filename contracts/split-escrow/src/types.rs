@@ -167,6 +167,93 @@ pub struct OracleConfig {
     pub oracle_addresses: Vec<Address>,
 }
 
+/// Atomic swap status
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[contracttype]
+pub enum SwapStatus {
+    Pending = 0,
+    Completed = 1,
+    Refunded = 2,
+    Expired = 3,
+}
+
+/// Atomic swap contract for instant settlements
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct AtomicSwap {
+    pub swap_id: String,
+    pub participant_a: Address,
+    pub participant_b: Address,
+    pub amount_a: i128,
+    pub amount_b: i128,
+    pub hash_lock: String,
+    pub secret: Option<String>,
+    pub time_lock: u64,
+    pub created_at: u64,
+    pub status: SwapStatus,
+    pub completed_at: Option<u64>,
+}
+
+/// Oracle node information
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct OracleNode {
+    pub oracle_address: Address,
+    pub stake: i128,
+    pub reputation: u64,
+    pub submissions_count: u64,
+    pub last_submission: u64,
+    pub active: bool,
+}
+
+/// Price submission from oracle
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct PriceSubmission {
+    pub oracle_address: Address,
+    pub asset_pair: String,
+    pub price: i128,
+    pub timestamp: u64,
+    pub signature: String,
+}
+
+/// Consensus price data
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct ConsensusPrice {
+    pub asset_pair: String,
+    pub price: i128,
+    pub confidence: f64,
+    pub participating_oracles: u32,
+    pub timestamp: u64,
+}
+
+/// Bridge transaction status
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[contracttype]
+pub enum BridgeStatus {
+    Initiated = 0,
+    Completed = 1,
+    Refunded = 2,
+    Failed = 3,
+}
+
+/// Cross-chain bridge transaction
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct BridgeTransaction {
+    pub bridge_id: String,
+    pub source_chain: String,
+    pub destination_chain: String,
+    pub amount: i128,
+    pub recipient: String,
+    pub sender: Address,
+    pub created_at: u64,
+    pub status: BridgeStatus,
+    pub proof_hash: Option<String>,
+    pub completed_at: Option<u64>,
+}
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u32)]
 pub enum Error {
@@ -192,6 +279,24 @@ pub enum Error {
     InvalidVerificationStatus = 20,
     OracleNotAuthorized = 21,
     InsufficientOracles = 22,
+    SwapNotFound = 23,
+    SwapAlreadyExists = 24,
+    InvalidSwapStatus = 25,
+    SecretInvalid = 26,
+    SwapExpired = 27,
+    OracleNotRegistered = 28,
+    InsufficientStake = 29,
+    PriceSubmissionInvalid = 30,
+    BridgeNotFound = 31,
+    BridgeAlreadyExists = 32,
+    InvalidBridgeStatus = 33,
+    ProofInvalid = 34,
+}
+
+impl From<&Error> for soroban_sdk::Error {
+    fn from(e: &Error) -> Self {
+        soroban_sdk::Error::from_contract_error(e.to_u32())
+    }
 }
 
 /// Configuration for the contract
