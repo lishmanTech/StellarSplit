@@ -30,6 +30,7 @@ import { AnalyticsModule } from "./analytics/analytics.module";
 import { ExportModule } from './export/export.module';
 import { WebhooksModule } from "./webhooks/webhooks.module";
 import { DisputesModule } from './disputes/disputes.module';
+import { GovernanceModule } from './governance/governance.module';
 // Load environment variables
 dotenv.config({
   path: path.resolve(__dirname, '../.env'),
@@ -100,6 +101,8 @@ dotenv.config({
     WebhooksModule,
     // Dispute resolution system for split conflicts
     DisputesModule,
+    // DAO Governance system for platform decisions
+    GovernanceModule,
   ],
 })
 export class AppModule {}
