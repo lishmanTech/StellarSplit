@@ -212,14 +212,102 @@ pub fn emit_verification_completed(env: &Env, verification_id: &String, verified
         );
 }
 
-/// Emit when verification status changes
+/// Emit when atomic swap is created
 ///
-/// This event tracks status changes in verification requests.
-pub fn emit_verification_status_changed(env: &Env, verification_id: &String, old_status: &str, new_status: &str) {
+/// This event is emitted when a new atomic swap is initiated.
+pub fn emit_swap_created(env: &Env, swap_id: &String, participant_a: &Address, participant_b: &Address, amount_a: i128, amount_b: i128) {
     env.events()
         .publish(
-            (symbol_short!("verification_status_changed"),),
-            (verification_id.clone(), old_status, new_status)
+            (symbol_short!("swap_created"),),
+            (swap_id.clone(), participant_a.clone(), participant_b.clone(), amount_a, amount_b)
+        );
+}
+
+/// Emit when atomic swap is executed
+///
+/// This event is emitted when an atomic swap is successfully completed.
+pub fn emit_swap_executed(env: &Env, swap_id: &String, executor: &Address) {
+    env.events()
+        .publish(
+            (symbol_short!("swap_executed"),),
+            (swap_id.clone(), executor.clone())
+        );
+}
+
+/// Emit when atomic swap is refunded
+///
+/// This event is emitted when an atomic swap is refunded due to timeout.
+pub fn emit_swap_refunded(env: &Env, swap_id: &String, refunder: &Address) {
+    env.events()
+        .publish(
+            (symbol_short!("swap_refunded"),),
+            (swap_id.clone(), refunder.clone())
+        );
+}
+
+/// Emit when oracle node is registered
+///
+/// This event is emitted when a new oracle node joins the network.
+pub fn emit_oracle_registered(env: &Env, oracle_address: &Address, stake: i128) {
+    env.events()
+        .publish(
+            (symbol_short!("oracle_registered"),),
+            (oracle_address.clone(), stake)
+        );
+}
+
+/// Emit when oracle submits price
+///
+/// This event is emitted when an oracle submits a price for an asset pair.
+pub fn emit_price_submitted(env: &Env, oracle_address: &Address, asset_pair: &String, price: i128) {
+    env.events()
+        .publish(
+            (symbol_short!("price_submitted"),),
+            (oracle_address.clone(), asset_pair.clone(), price)
+        );
+}
+
+/// Emit when consensus price is calculated
+///
+/// This event is emitted when the network reaches consensus on a price.
+pub fn emit_consensus_reached(env: &Env, asset_pair: &String, consensus_price: i128, confidence: f64, participating_oracles: u32) {
+    env.events()
+        .publish(
+            (symbol_short!("consensus_reached"),),
+            (asset_pair.clone(), consensus_price, confidence, participating_oracles)
+        );
+}
+
+/// Emit when bridge transaction is initiated
+///
+/// This event is emitted when a cross-chain bridge transaction is started.
+pub fn emit_bridge_initiated(env: &Env, bridge_id: &String, source_chain: &String, destination_chain: &String, amount: i128, recipient: &String) {
+    env.events()
+        .publish(
+            (symbol_short!("bridge_initiated"),),
+            (bridge_id.clone(), source_chain.clone(), destination_chain.clone(), amount, recipient.clone())
+        );
+}
+
+/// Emit when bridge transaction is completed
+///
+/// This event is emitted when a bridge transaction is successfully completed.
+pub fn emit_bridge_completed(env: &Env, bridge_id: &String, recipient: &String) {
+    env.events()
+        .publish(
+            (symbol_short!("bridge_completed"),),
+            (bridge_id.clone(), recipient.clone())
+        );
+}
+
+/// Emit when bridge transaction is refunded
+///
+/// This event is emitted when a bridge transaction is refunded.
+pub fn emit_bridge_refunded(env: &Env, bridge_id: &String, sender: &Address) {
+    env.events()
+        .publish(
+            (symbol_short!("bridge_refunded"),),
+            (bridge_id.clone(), sender.clone())
         );
 }
 

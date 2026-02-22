@@ -590,20 +590,154 @@ fn format_number_as_string(env: &Env, num: u64) -> String {
     }
 }
 
-/// Get all verification requests for a split
-pub fn get_split_verifications(env: &Env, split_id: &String) -> Vec<String> {
-    let mut verification_ids = Vec::new(env);
-    let counter = get_next_verification_id(env);
-    
-    // Search through all verification IDs
-    for i in 0..counter {
-        let id_str = format_number_as_string(env, i);
-        if let Some(request) = get_verification_request(env, &id_str) {
-            if request.split_id == *split_id {
-                verification_ids.push_back(id_str);
-            }
-        }
+/// Storage keys for atomic swaps
+#[derive(Clone)]
+#[contracttype]
+pub enum SwapStorageKey {
+    AtomicSwap(String),
+    SwapCounter,
+}
+
+/// Storage keys for oracle network
+#[derive(Clone)]
+#[contracttype]
+pub enum OracleStorageKey {
+    OracleNode(Address),
+    PriceSubmission(String, Address), // asset_pair, oracle_address
+    ConsensusPrice(String),
+    OracleCounter,
+}
+
+/// Storage keys for bridge transactions
+#[derive(Clone)]
+#[contracttype]
+pub enum BridgeStorageKey {
+    BridgeTransaction(String),
+    BridgeCounter,
+}
+
+// Atomic Swap Storage Functions
+
+/// Get atomic swap
+pub fn get_atomic_swap(env: &Env, swap_id: &String) -> Option<AtomicSwap> {
+    let key = SwapStorageKey::AtomicSwap(swap_id.clone());
+    env.storage().persistent().get(&key)
+}
+
+/// Set atomic swap
+pub fn set_atomic_swap(env: &Env, swap_id: &String, swap: &AtomicSwap) {
+    let key = SwapStorageKey::AtomicSwap(swap_id.clone());
+    env.storage().persistent().set(&key, swap);
+}
+
+/// Check if atomic swap exists
+pub fn has_atomic_swap(env: &Env, swap_id: &String) -> bool {
+    let key = SwapStorageKey::AtomicSwap(swap_id.clone());
+    env.storage().persistent().has(&key)
+}
+
+/// Get next swap ID
+pub fn get_next_swap_id(env: &Env) -> String {
+    let key = SwapStorageKey::SwapCounter;
+    let counter = env.storage().persistent().get(&key).unwrap_or(0u64);
+    env.storage().persistent().set(&key, &(counter + 1));
+    format_number_as_string(&env, counter)
+}
+
+// Oracle Network Storage Functions
+
+/// Get oracle node
+pub fn get_oracle_node(env: &Env, oracle_address: &Address) -> Option<OracleNode> {
+    let key = OracleStorageKey::OracleNode(oracle_address.clone());
+    env.storage().persistent().get(&key)
+}
+
+/// Set oracle node
+pub fn set_oracle_node(env: &Env, oracle_address: &Address, node: &OracleNode) {
+    let key = OracleStorageKey::OracleNode(oracle_address.clone());
+    env.storage().persistent().set(&key, node);
+}
+
+/// Check if oracle node exists
+pub fn has_oracle_node(env: &Env, oracle_address: &Address) -> bool {
+    let key = OracleStorageKey::OracleNode(oracle_address.clone());
+    env.storage().persistent().has(&key)
+}
+
+/// Get price submission
+pub fn get_price_submission(env: &Env, asset_pair: &String, oracle_address: &Address) -> Option<PriceSubmission> {
+    let key = OracleStorageKey::PriceSubmission(asset_pair.clone(), oracle_address.clone());
+    env.storage().persistent().get(&key)
+}
+
+/// Set price submission
+pub fn set_price_submission(env: &Env, asset_pair: &String, oracle_address: &Address, submission: &PriceSubmission) {
+    let key = OracleStorageKey::PriceSubmission(asset_pair.clone(), oracle_address.clone());
+    env.storage().persistent().set(&key, submission);
+}
+
+/// Get consensus price
+pub fn get_consensus_price(env: &Env, asset_pair: &String) -> Option<ConsensusPrice> {
+    let key = OracleStorageKey::ConsensusPrice(asset_pair.clone());
+    env.storage().persistent().get(&key)
+}
+
+/// Set consensus price
+pub fn set_consensus_price(env: &Env, asset_pair: &String, price: &ConsensusPrice) {
+    let key = OracleStorageKey::ConsensusPrice(asset_pair.clone());
+    env.storage().persistent().set(&key, price);
+}
+
+/// Get next oracle ID
+pub fn get_next_oracle_id(env: &Env) -> u64 {
+    let key = OracleStorageKey::OracleCounter;
+    let counter = env.storage().persistent().get(&key).unwrap_or(0u64);
+    env.storage().persistent().set(&key, &(counter + 1));
+    counter
+}
+
+// Bridge Storage Functions
+
+/// Get bridge transaction
+pub fn get_bridge_transaction(env: &Env, bridge_id: &String) -> Option<BridgeTransaction> {
+    let key = BridgeStorageKey::BridgeTransaction(bridge_id.clone());
+    env.storage().persistent().get(&key)
+}
+
+/// Set bridge transaction
+pub fn set_bridge_transaction(env: &Env, bridge_id: &String, transaction: &BridgeTransaction) {
+    let key = BridgeStorageKey::BridgeTransaction(bridge_id.clone());
+    env.storage().persistent().set(&key, transaction);
+}
+
+/// Check if bridge transaction exists
+pub fn has_bridge_transaction(env: &Env, bridge_id: &String) -> bool {
+    let key = BridgeStorageKey::BridgeTransaction(bridge_id.clone());
+    env.storage().persistent().has(&key)
+}
+
+/// Get next bridge ID
+pub fn get_next_bridge_id(env: &Env) -> String {
+    let key = BridgeStorageKey::BridgeCounter;
+    let counter = env.storage().persistent().get(&key).unwrap_or(0u64);
+    env.storage().persistent().set(&key, &(counter + 1));
+    format_number_as_string(&env, counter)
+}
+
+/// Helper to format number as string (reused from previous features)
+fn format_number_as_string(env: &Env, num: u64) -> String {
+    match num {
+        0 => String::from_str(env, "0"),
+        1 => String::from_str(env, "1"),
+        2 => String::from_str(env, "2"),
+        3 => String::from_str(env, "3"),
+        4 => String::from_str(env, "4"),
+        5 => String::from_str(env, "5"),
+        6 => String::from_str(env, "6"),
+        7 => String::from_str(env, "7"),
+        8 => String::from_str(env, "8"),
+        9 => String::from_str(env, "9"),
+        10 => String::from_str(env, "10"),
+        _ => String::from_str(env, "999"),
     }
-    
-    verification_ids
 }

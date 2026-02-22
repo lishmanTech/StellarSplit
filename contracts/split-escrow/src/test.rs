@@ -10,9 +10,12 @@ use std::string::ToString;
 
 use super::*;
 use soroban_sdk::{
-    symbol_short, testutils::Address as _, testutils::Events as _, testutils::Ledger as _, token, Address, Env, String,
-    Symbol, TryIntoVal, Vec,
+    Address, Env, String, Vec, Symbol, Map, Binary,
+    testutils::{Ledger, Address as _},
+    token::{StellarAssetClient, Client},
+    contracterror,
 };
+
 use soroban_sdk::token::StellarAssetClient;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
@@ -736,6 +739,12 @@ fn test_escrow_storage() {
         assert!(storage::has_escrow(&env, &split_id));
 
         let retrieved = storage::get_escrow(&env, &split_id).unwrap();
+        assert_eq!(retrieved.split_id, split_id);
+        assert_eq!(retrieved.creator, creator);
+    });
+}
+
+#[test]
 fn test_has_participant_payment() {
     let env = Env::default();
     let contract_id = env.register_contract(None, SplitEscrowContract);
@@ -1358,7 +1367,10 @@ fn test_rewards_storage_helpers() {
         storage::set_user_activity(&env, &user, activity_id, &activity);
         
         let retrieved_activity = storage::get_user_activity(&env, &user, activity_id).unwrap();
-        }
+        assert_eq!(retrieved_activity.split_id, 123);
+        assert_eq!(retrieved_activity.amount, 100);
+    });
+}
 
 // ============================================
 // Oracle Tests
@@ -1662,5 +1674,513 @@ fn test_oracle_storage_helpers() {
         assert_eq!(retrieved_config.verification_timeout, 172800);
         assert_eq!(retrieved_config.min_oracles, 2);
         assert_eq!(retrieved_config.oracle_addresses.len(), 2);
+    });
+}
+
+// ============================================
+// Atomic Swap Tests
+// ============================================
+
+#[test]
+fn test_create_swap_success() {
+    let (env, admin, token_id, client, _token_client, _token_admin_client) = setup_test();
+    
+    // Initialize contract
+    initialize_contract(&client, &admin, &token_id);
+    
+    let participant_a = Address::generate(&env);
+    let participant_b = Address::generate(&env);
+    let hash_lock = String::from_str(&env, "hash_lock_123");
+    let time_lock = env.ledger().timestamp() + 3600; // 1 hour from now
+    
+    // Create swap
+    let swap_id = client.create_swap(
+        &participant_a,
+        &participant_b,
+        &1000,
+        &2000,
+        &hash_lock,
+        time_lock,
+    );
+    
+    // Verify swap was created
+    assert!(swap_id.len() > 0);
+    
+    // Check swap details
+    let swap = client.get_atomic_swap(&swap_id);
+    assert_eq!(swap.participant_a, participant_a);
+    assert_eq!(swap.participant_b, participant_b);
+    assert_eq!(swap.amount_a, 1000);
+    assert_eq!(swap.amount_b, 2000);
+    assert_eq!(swap.hash_lock, hash_lock);
+    assert_eq!(swap.status, types::SwapStatus::Pending);
+    
+    // Check events
+    let events = env.events().all();
+    assert!(events.len() > 0);
+}
+
+#[test]
+fn test_create_swap_invalid_amount() {
+    let (env, admin, token_id, client, _token_client, _token_admin_client) = setup_test();
+    
+    // Initialize contract
+    initialize_contract(&client, &admin, &token_id);
+    
+    let participant_a = Address::generate(&env);
+    let participant_b = Address::generate(&env);
+    let hash_lock = String::from_str(&env, "hash_lock_123");
+    let time_lock = env.ledger().timestamp() + 3600;
+    
+    // Try to create swap with invalid amount
+    let result = client.try_create_swap(&participant_a, &participant_b, &0, &2000, &hash_lock, time_lock);
+    assert_eq!(result, Err(Ok(types::Error::InvalidAmount)));
+}
+
+#[test]
+fn test_execute_swap_success() {
+    let (env, admin, token_id, client, _token_client, _token_admin_client) = setup_test();
+    
+    // Initialize contract
+    initialize_contract(&client, &admin, &token_id);
+    
+    let participant_a = Address::generate(&env);
+    let participant_b = Address::generate(&env);
+    let secret = String::from_str(&env, "secret_123");
+    let hash_lock = String::from_str(&env, "hash_secret_123");
+    let time_lock = env.ledger().timestamp() + 3600;
+    
+    // Create swap
+    let swap_id = client.create_swap(&participant_a, &participant_b, &1000, &2000, &hash_lock, time_lock);
+    
+    // Execute swap with correct secret
+    client.execute_swap(&swap_id, &secret);
+    
+    // Check swap was executed
+    let swap = client.get_atomic_swap(&swap_id);
+    assert_eq!(swap.status, types::SwapStatus::Completed);
+    assert_eq!(swap.secret, Some(secret));
+    assert!(swap.completed_at.is_some());
+    
+    // Check events
+    let events = env.events().all();
+    assert!(events.len() > 0);
+}
+
+#[test]
+fn test_execute_swap_invalid_secret() {
+    let (env, admin, token_id, client, _token_client, _token_admin_client) = setup_test();
+    
+    // Initialize contract
+    initialize_contract(&client, &admin, &token_id);
+    
+    let participant_a = Address::generate(&env);
+    let participant_b = Address::generate(&env);
+    let hash_lock = String::from_str(&env, "hash_secret_123");
+    let time_lock = env.ledger().timestamp() + 3600;
+    
+    // Create swap
+    let swap_id = client.create_swap(&participant_a, &participant_b, &1000, &2000, &hash_lock, time_lock);
+    
+    // Try to execute swap with wrong secret
+    let wrong_secret = String::from_str(&env, "wrong_secret");
+    let result = client.try_execute_swap(&swap_id, &wrong_secret);
+    assert_eq!(result, Err(Ok(types::Error::SecretInvalid)));
+}
+
+#[test]
+fn test_refund_swap_success() {
+    let (env, admin, token_id, client, _token_client, _token_admin_client) = setup_test();
+    
+    // Initialize contract
+    initialize_contract(&client, &admin, &token_id);
+    
+    let participant_a = Address::generate(&env);
+    let participant_b = Address::generate(&env);
+    let hash_lock = String::from_str(&env, "hash_secret_123");
+    let time_lock = env.ledger().timestamp() + 1; // Very short timeout
+    
+    // Create swap
+    let swap_id = client.create_swap(&participant_a, &participant_b, &1000, &2000, &hash_lock, time_lock);
+    
+    // Fast forward time beyond timeout
+    env.ledger().set_timestamp(env.ledger().timestamp() + 10);
+    
+    // Refund swap
+    client.refund_swap(&swap_id);
+    
+    // Check swap was refunded
+    let swap = client.get_atomic_swap(&swap_id);
+    assert_eq!(swap.status, types::SwapStatus::Refunded);
+    assert!(swap.completed_at.is_some());
+    
+    // Check events
+    let events = env.events().all();
+    assert!(events.len() > 0);
+}
+
+// ============================================
+// Oracle Network Tests
+// ============================================
+
+#[test]
+fn test_register_oracle_success() {
+    let (env, admin, token_id, client, _token_client, _token_admin_client) = setup_test();
+    
+    // Initialize contract
+    initialize_contract(&client, &admin, &token_id);
+    
+    let oracle = Address::generate(&env);
+    let stake = 10000;
+    
+    // Register oracle
+    client.register_oracle(&oracle, &stake);
+    
+    // Check oracle was registered
+    let oracle_node = client.get_oracle_node(&oracle);
+    assert_eq!(oracle_node.oracle_address, oracle);
+    assert_eq!(oracle_node.stake, stake);
+    assert_eq!(oracle_node.reputation, 100);
+    assert!(oracle_node.active);
+    
+    // Check events
+    let events = env.events().all();
+    assert!(events.len() > 0);
+}
+
+#[test]
+fn test_register_oracle_insufficient_stake() {
+    let (env, admin, token_id, client, _token_client, _token_admin_client) = setup_test();
+    
+    // Initialize contract
+    initialize_contract(&client, &admin, &token_id);
+    
+    let oracle = Address::generate(&env);
+    let stake = 0; // Invalid stake
+    
+    // Try to register oracle with insufficient stake
+    let result = client.try_register_oracle(&oracle, &stake);
+    assert_eq!(result, Err(Ok(types::Error::InsufficientStake)));
+}
+
+#[test]
+fn test_submit_price_success() {
+    let (env, admin, token_id, client, _token_client, _token_admin_client) = setup_test();
+    
+    // Initialize contract
+    initialize_contract(&client, &admin, &token_id);
+    
+    let oracle = Address::generate(&env);
+    let stake = 10000;
+    
+    // Register oracle first
+    client.register_oracle(&oracle, &stake);
+    
+    let asset_pair = String::from_str(&env, "BTC/USD");
+    let price = 50000;
+    
+    // Submit price
+    client.submit_price(&oracle, &asset_pair, &price);
+    
+    // Check price submission
+    let submission = client.get_price_submission(&asset_pair, &oracle);
+    assert_eq!(submission.oracle_address, oracle);
+    assert_eq!(submission.asset_pair, asset_pair);
+    assert_eq!(submission.price, price);
+    
+    // Check events
+    let events = env.events().all();
+    assert!(events.len() > 0);
+}
+
+#[test]
+fn test_submit_price_unregistered_oracle() {
+    let (env, admin, token_id, client, _token_client, _token_admin_client) = setup_test();
+    
+    // Initialize contract
+    initialize_contract(&client, &admin, &token_id);
+    
+    let oracle = Address::generate(&env);
+    let asset_pair = String::from_str(&env, "BTC/USD");
+    let price = 50000;
+    
+    // Try to submit price from unregistered oracle
+    let result = client.try_submit_price(&oracle, &asset_pair, &price);
+    assert_eq!(result, Err(Ok(types::Error::OracleNotRegistered)));
+}
+
+#[test]
+fn test_get_consensus_price_success() {
+    let (env, admin, token_id, client, _token_client, _token_admin_client) = setup_test();
+    
+    // Initialize contract
+    initialize_contract(&client, &admin, &token_id);
+    
+    let oracle = Address::generate(&env);
+    let stake = 10000;
+    
+    // Register oracle and submit price
+    client.register_oracle(&oracle, &stake);
+    
+    let asset_pair = String::from_str(&env, "BTC/USD");
+    let price = 50000;
+    client.submit_price(&oracle, &asset_pair, &price);
+    
+    // Get consensus price
+    let consensus_price = client.get_consensus_price(&asset_pair);
+    assert!(consensus_price > 0);
+}
+
+// ============================================
+// Cross-Chain Bridge Tests
+// ============================================
+
+#[test]
+fn test_initiate_bridge_success() {
+    let (env, admin, token_id, client, _token_client, _token_admin_client) = setup_test();
+    
+    // Initialize contract
+    initialize_contract(&client, &admin, &token_id);
+    
+    let source_chain = String::from_str(&env, "ethereum");
+    let amount = 1000;
+    let recipient = String::from_str(&env, "0x1234567890abcdef");
+    
+    // Initiate bridge
+    let bridge_id = client.initiate_bridge(&source_chain, &amount, &recipient);
+    
+    // Verify bridge was created
+    assert!(bridge_id.len() > 0);
+    
+    // Check bridge details
+    let bridge = client.get_bridge_transaction(&bridge_id);
+    assert_eq!(bridge.source_chain, source_chain);
+    assert_eq!(bridge.amount, amount);
+    assert_eq!(bridge.recipient, recipient);
+    assert_eq!(bridge.status, types::BridgeStatus::Initiated);
+    
+    // Check events
+    let events = env.events().all();
+    assert!(events.len() > 0);
+}
+
+#[test]
+fn test_initiate_bridge_invalid_amount() {
+    let (env, admin, token_id, client, _token_client, _token_admin_client) = setup_test();
+    
+    // Initialize contract
+    initialize_contract(&client, &admin, &token_id);
+    
+    let source_chain = String::from_str(&env, "ethereum");
+    let amount = 0; // Invalid amount
+    let recipient = String::from_str(&env, "0x1234567890abcdef");
+    
+    // Try to initiate bridge with invalid amount
+    let result = client.try_initiate_bridge(&source_chain, &amount, &recipient);
+    assert_eq!(result, Err(Ok(types::Error::InvalidAmount)));
+}
+
+#[test]
+fn test_complete_bridge_success() {
+    let (env, admin, token_id, client, _token_client, _token_admin_client) = setup_test();
+    
+    // Initialize contract
+    initialize_contract(&client, &admin, &token_id);
+    
+    let source_chain = String::from_str(&env, "ethereum");
+    let amount = 1000;
+    let recipient = String::from_str(&env, "0x1234567890abcdef");
+    
+    // Initiate bridge
+    let bridge_id = client.initiate_bridge(&source_chain, &amount, &recipient);
+    
+    // Complete bridge with proof
+    let proof = Binary::from_array(&env, &[1u8, 2u8, 3u8]);
+    client.complete_bridge(&bridge_id, &proof);
+    
+    // Check bridge was completed
+    let bridge = client.get_bridge_transaction(&bridge_id);
+    assert_eq!(bridge.status, types::BridgeStatus::Completed);
+    assert!(bridge.completed_at.is_some());
+    
+    // Check events
+    let events = env.events().all();
+    assert!(events.len() > 0);
+}
+
+#[test]
+fn test_complete_bridge_invalid_proof() {
+    let (env, admin, token_id, client, _token_client, _token_admin_client) = setup_test();
+    
+    // Initialize contract
+    initialize_contract(&client, &admin, &token_id);
+    
+    let source_chain = String::from_str(&env, "ethereum");
+    let amount = 1000;
+    let recipient = String::from_str(&env, "0x1234567890abcdef");
+    
+    // Initiate bridge
+    let bridge_id = client.initiate_bridge(&source_chain, &amount, &recipient);
+    
+    // Try to complete bridge with empty proof
+    let empty_proof = Binary::new(&env);
+    let result = client.try_complete_bridge(&bridge_id, &empty_proof);
+    assert_eq!(result, Err(Ok(types::Error::ProofInvalid)));
+}
+
+#[test]
+fn test_bridge_back_success() {
+    let (env, admin, token_id, client, _token_client, _token_admin_client) = setup_test();
+    
+    // Initialize contract
+    initialize_contract(&client, &admin, &token_id);
+    
+    let destination_chain = String::from_str(&env, "polygon");
+    let amount = 1000;
+    
+    // Bridge back
+    let bridge_id = client.bridge_back(&destination_chain, &amount);
+    
+    // Verify reverse bridge was created
+    assert!(bridge_id.len() > 0);
+    
+    // Check bridge details
+    let bridge = client.get_bridge_transaction(&bridge_id);
+    assert_eq!(bridge.destination_chain, destination_chain);
+    assert_eq!(bridge.amount, amount);
+    assert_eq!(bridge.status, types::BridgeStatus::Initiated);
+    
+    // Check events
+    let events = env.events().all();
+    assert!(events.len() > 0);
+}
+
+// ============================================
+// Advanced Features Storage Tests
+// ============================================
+
+#[test]
+fn test_atomic_swap_storage_helpers() {
+    let env = Env::default();
+    let contract_id = env.register_contract(None, SplitEscrowContract);
+    
+    let swap_id = String::from_str(&env, "test-swap");
+    let participant_a = Address::generate(&env);
+    let participant_b = Address::generate(&env);
+    
+    env.as_contract(&contract_id, || {
+        // Test storing and retrieving atomic swap
+        let swap = types::AtomicSwap {
+            swap_id: swap_id.clone(),
+            participant_a: participant_a.clone(),
+            participant_b: participant_b.clone(),
+            amount_a: 1000,
+            amount_b: 2000,
+            hash_lock: String::from_str(&env, "hash_lock"),
+            secret: None,
+            time_lock: 12345,
+            created_at: 12345,
+            status: types::SwapStatus::Pending,
+            completed_at: None,
+        };
+        
+        // Store swap
+        storage::set_atomic_swap(&env, &swap_id, &swap);
+        
+        // Verify storage
+        assert!(storage::has_atomic_swap(&env, &swap_id));
+        
+        let retrieved = storage::get_atomic_swap(&env, &swap_id).unwrap();
+        assert_eq!(retrieved.swap_id, swap_id);
+        assert_eq!(retrieved.participant_a, participant_a);
+        assert_eq!(retrieved.participant_b, participant_b);
+        assert_eq!(retrieved.amount_a, 1000);
+        assert_eq!(retrieved.amount_b, 2000);
+    });
+}
+
+#[test]
+fn test_oracle_storage_helpers() {
+    let env = Env::default();
+    let contract_id = env.register_contract(None, SplitEscrowContract);
+    
+    let oracle = Address::generate(&env);
+    let asset_pair = String::from_str(&env, "BTC/USD");
+    
+    env.as_contract(&contract_id, || {
+        // Test storing and retrieving oracle node
+        let oracle_node = types::OracleNode {
+            oracle_address: oracle.clone(),
+            stake: 10000,
+            reputation: 100,
+            submissions_count: 0,
+            last_submission: 0,
+            active: true,
+        };
+        
+        // Store oracle node
+        storage::set_oracle_node(&env, &oracle, &oracle_node);
+        
+        // Verify storage
+        assert!(storage::has_oracle_node(&env, &oracle));
+        
+        let retrieved = storage::get_oracle_node(&env, &oracle).unwrap();
+        assert_eq!(retrieved.oracle_address, oracle);
+        assert_eq!(retrieved.stake, 10000);
+        assert_eq!(retrieved.reputation, 100);
+        
+        // Test price submission storage
+        let submission = types::PriceSubmission {
+            oracle_address: oracle.clone(),
+            asset_pair: asset_pair.clone(),
+            price: 50000,
+            timestamp: 12345,
+            signature: String::from_str(&env, "signature"),
+        };
+        
+        storage::set_price_submission(&env, &asset_pair, &oracle, &submission);
+        
+        let retrieved_submission = storage::get_price_submission(&env, &asset_pair, &oracle).unwrap();
+        assert_eq!(retrieved_submission.oracle_address, oracle);
+        assert_eq!(retrieved_submission.asset_pair, asset_pair);
+        assert_eq!(retrieved_submission.price, 50000);
+    });
+}
+
+#[test]
+fn test_bridge_storage_helpers() {
+    let env = Env::default();
+    let contract_id = env.register_contract(None, SplitEscrowContract);
+    
+    let bridge_id = String::from_str(&env, "test-bridge");
+    let sender = Address::generate(&env);
+    
+    env.as_contract(&contract_id, || {
+        // Test storing and retrieving bridge transaction
+        let bridge = types::BridgeTransaction {
+            bridge_id: bridge_id.clone(),
+            source_chain: String::from_str(&env, "ethereum"),
+            destination_chain: String::from_str(&env, "polygon"),
+            amount: 1000,
+            recipient: String::from_str(&env, "0x1234567890abcdef"),
+            sender: sender.clone(),
+            created_at: 12345,
+            status: types::BridgeStatus::Initiated,
+            proof_hash: None,
+            completed_at: None,
+        };
+        
+        // Store bridge transaction
+        storage::set_bridge_transaction(&env, &bridge_id, &bridge);
+        
+        // Verify storage
+        assert!(storage::has_bridge_transaction(&env, &bridge_id));
+        
+        let retrieved = storage::get_bridge_transaction(&env, &bridge_id).unwrap();
+        assert_eq!(retrieved.bridge_id, bridge_id);
+        assert_eq!(retrieved.source_chain, String::from_str(&env, "ethereum"));
+        assert_eq!(retrieved.destination_chain, String::from_str(&env, "polygon"));
+        assert_eq!(retrieved.amount, 1000);
+        assert_eq!(retrieved.sender, sender);
     });
 }
