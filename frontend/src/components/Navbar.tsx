@@ -71,7 +71,7 @@ export default function Navbar() {
             ))}
 
             <NavLink
-              to="/"
+              to="https://github.com/OlufunbiIK/StellarSplit"
               className="inline-flex items-center px-3 py-2 text-sm lg:text-base font-medium rounded-md text-muted-theme hover:text-theme hover:bg-card-theme/50 transition-colors"
             >
               GitHub
