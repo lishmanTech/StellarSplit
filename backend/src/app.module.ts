@@ -31,6 +31,7 @@ import { ExportModule } from './export/export.module';
 import { WebhooksModule } from "./webhooks/webhooks.module";
 import { DisputesModule } from './disputes/disputes.module';
 import { GovernanceModule } from './governance/governance.module';
+import { ComplianceModule } from './compliance/compliance.module';
 // Load environment variables
 dotenv.config({
   path: path.resolve(__dirname, '../.env'),
@@ -103,6 +104,8 @@ dotenv.config({
     DisputesModule,
     // DAO Governance system for platform decisions
     GovernanceModule,
+    // Compliance module for tax reporting and exports
+    ComplianceModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }
