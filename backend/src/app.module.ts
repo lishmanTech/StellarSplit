@@ -35,6 +35,9 @@ import { ComplianceModule } from './compliance/compliance.module';
 import { SettlementModule } from "./settlement/settlement.module";
 import { TemplatesModule } from "./templates/templates.module";
 import { GatewayModule } from "./gateway/gateway.module";
+import { ProfileModule } from "./profile/profile.module";
+import { InvitationsModule } from "./invitations/invitations.module";
+import { CommonModule } from "./common/common.module";
 // Load environment variables
 dotenv.config({
   path: path.resolve(__dirname, '../.env'),
@@ -112,6 +115,9 @@ dotenv.config({
     SettlementModule,
     TemplatesModule,
     GatewayModule,
+    ProfileModule,
+    InvitationsModule,
+    CommonModule,
   ],
 })
 export class AppModule { }
