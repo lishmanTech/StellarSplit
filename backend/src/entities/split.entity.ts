@@ -49,6 +49,9 @@ export class Split {
   @Column({ type: "varchar", length: 56, nullable: true })
   creatorWalletAddress?: string;
 
+  @Column({ type: "timestamp", nullable: true })
+  dueDate?: Date;
+
   @CreateDateColumn()
   createdAt!: Date;
 
