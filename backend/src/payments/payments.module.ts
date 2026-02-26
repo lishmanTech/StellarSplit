@@ -11,6 +11,7 @@ import { Split } from "../entities/split.entity";
 import { EmailModule } from "../email/email.module";
 import { MultiCurrencyModule } from "../multi-currency/multi-currency.module";
 import { AnalyticsModule } from "../analytics/analytics.module";
+import { GatewayModule } from "../gateway/gateway.module";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { AnalyticsModule } from "../analytics/analytics.module";
     EmailModule,
     MultiCurrencyModule,
     AnalyticsModule,
+    GatewayModule,
   ],
   controllers: [PaymentsController],
   providers: [PaymentsService, PaymentProcessorService, PaymentGateway],
