@@ -35,6 +35,8 @@ import { ComplianceModule } from './compliance/compliance.module';
 import { SettlementModule } from "./settlement/settlement.module";
 import { TemplatesModule } from "./templates/templates.module";
 import { GatewayModule } from "./gateway/gateway.module";
+import { SchedulerModule } from "./modules/scheduler/scheduler.module";
+import { UploadModule } from "./uploads/upload.module";
 import { ProfileModule } from "./profile/profile.module";
 import { InvitationsModule } from "./invitations/invitations.module";
 import { CommonModule } from "./common/common.module";
@@ -115,6 +117,8 @@ dotenv.config({
     SettlementModule,
     TemplatesModule,
     GatewayModule,
+    SchedulerModule,
+    UploadModule,
     ProfileModule,
     InvitationsModule,
     CommonModule,
