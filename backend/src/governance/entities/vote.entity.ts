@@ -6,45 +6,45 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
-} from 'typeorm';
-import { Proposal } from './proposal.entity';
+} from "typeorm";
+import { Proposal } from "./proposal.entity";
 
 export enum VoteType {
-  FOR = 'for',
-  AGAINST = 'against',
-  ABSTAIN = 'abstain',
+  FOR = "for",
+  AGAINST = "against",
+  ABSTAIN = "abstain",
 }
 
-@Entity('votes')
-@Index(['proposalId', 'voter'], { unique: true })
+@Entity("votes")
+@Index(["proposalId", "voter"], { unique: true })
 export class Vote {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
 
   @Column()
-  proposalId: string;
+  proposalId!: string;
 
   @Column()
-  voter: string;
+  voter!: string;
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: VoteType,
   })
-  voteType: VoteType;
+  voteType!: VoteType;
 
-  @Column({ type: 'bigint' })
-  votingPower: string;
+  @Column({ type: "bigint" })
+  votingPower!: string;
 
-  @Column({ type: 'text', nullable: true })
-  reason: string;
+  @Column({ type: "text", nullable: true })
+  reason!: string;
 
   @ManyToOne(() => Proposal, (proposal) => proposal.votes, {
-    onDelete: 'CASCADE',
+    onDelete: "CASCADE",
   })
-  @JoinColumn({ name: 'proposalId' })
-  proposal: Proposal;
+  @JoinColumn({ name: "proposalId" })
+  proposal!: Proposal;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 }

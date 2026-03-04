@@ -5,83 +5,83 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
-} from 'typeorm';
-import { Vote } from './vote.entity';
-import { ProposalAction } from './proposal-action.entity';
+} from "typeorm";
+import { Vote } from "./vote.entity";
+import { ProposalAction } from "./proposal-action.entity";
 
 export enum ProposalStatus {
-  PENDING = 'pending',
-  ACTIVE = 'active',
-  SUCCEEDED = 'succeeded',
-  DEFEATED = 'defeated',
-  QUEUED = 'queued',
-  EXECUTED = 'executed',
-  VETOED = 'vetoed',
-  EXPIRED = 'expired',
+  PENDING = "pending",
+  ACTIVE = "active",
+  SUCCEEDED = "succeeded",
+  DEFEATED = "defeated",
+  QUEUED = "queued",
+  EXECUTED = "executed",
+  VETOED = "vetoed",
+  EXPIRED = "expired",
 }
 
-@Entity('proposals')
+@Entity("proposals")
 export class Proposal {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
 
   @Column()
-  proposer: string;
+  proposer!: string;
 
-  @Column('text')
-  description: string;
+  @Column("text")
+  description!: string;
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: ProposalStatus,
     default: ProposalStatus.PENDING,
   })
-  status: ProposalStatus;
+  status!: ProposalStatus;
 
-  @Column({ type: 'bigint', default: 0 })
-  votesFor: string;
+  @Column({ type: "bigint", default: 0 })
+  votesFor!: string;
 
-  @Column({ type: 'bigint', default: 0 })
-  votesAgainst: string;
+  @Column({ type: "bigint", default: 0 })
+  votesAgainst!: string;
 
-  @Column({ type: 'bigint', default: 0 })
-  votesAbstain: string;
+  @Column({ type: "bigint", default: 0 })
+  votesAbstain!: string;
 
-  @Column({ type: 'timestamp', nullable: true })
-  votingStartTime: Date;
+  @Column({ type: "timestamp", nullable: true })
+  votingStartTime!: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
-  votingEndTime: Date;
+  @Column({ type: "timestamp", nullable: true })
+  votingEndTime!: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
-  executionTime: Date;
+  @Column({ type: "timestamp", nullable: true })
+  executionTime!: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
-  executedAt: Date;
+  @Column({ type: "timestamp", nullable: true })
+  executedAt!: Date;
 
   @Column({ nullable: true })
-  vetoedBy: string;
+  vetoedBy!: string;
 
-  @Column({ type: 'text', nullable: true })
-  vetoReason: string;
+  @Column({ type: "text", nullable: true })
+  vetoReason!: string;
 
-  @Column({ type: 'int', default: 51 })
-  quorumPercentage: number;
+  @Column({ type: "int", default: 51 })
+  quorumPercentage!: number;
 
-  @Column({ type: 'bigint', default: 0 })
-  totalVotingPower: string;
+  @Column({ type: "bigint", default: 0 })
+  totalVotingPower!: string;
 
   @OneToMany(() => Vote, (vote) => vote.proposal, { cascade: true })
-  votes: Vote[];
+  votes!: Vote[];
 
   @OneToMany(() => ProposalAction, (action) => action.proposal, {
     cascade: true,
   })
-  actions: ProposalAction[];
+  actions!: ProposalAction[];
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

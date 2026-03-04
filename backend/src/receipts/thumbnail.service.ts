@@ -1,5 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import * as sharp from 'sharp';
+import { Injectable } from "@nestjs/common";
+
+// sharp is a CommonJS module — require() gives the callable default export.
+// `import * as sharp` imports the namespace object which has no call signature.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const sharp = require("sharp") as typeof import("sharp");
 
 @Injectable()
 export class ThumbnailService {
@@ -10,13 +14,15 @@ export class ThumbnailService {
     return path;
   }
 
-  async convertHeicToJpg(file: Express.Multer.File): Promise<Express.Multer.File> {
+  async convertHeicToJpg(
+    file: Express.Multer.File,
+  ): Promise<Express.Multer.File> {
     const buffer = await sharp(file.buffer).jpeg().toBuffer();
     return {
       ...file,
       buffer,
-      mimetype: 'image/jpeg',
-      originalname: file.originalname.replace(/\.heic$/i, '.jpg'),
+      mimetype: "image/jpeg",
+      originalname: file.originalname.replace(/\.heic$/i, ".jpg"),
     };
   }
 }

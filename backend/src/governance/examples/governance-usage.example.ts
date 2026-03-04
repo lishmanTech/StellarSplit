@@ -1,13 +1,13 @@
 /**
  * DAO Governance System Usage Examples
- * 
+ *
  * This file demonstrates how to use the governance system
  * for various DAO operations.
  */
 
-import { GovernanceService } from '../governance.service';
-import { ActionType } from '../entities/proposal-action.entity';
-import { VoteType } from '../entities/vote.entity';
+import { GovernanceService } from "../governance.service";
+import { ActionType } from "../entities/proposal-action.entity";
+import { VoteType } from "../entities/vote.entity";
 
 export class GovernanceUsageExamples {
   constructor(private readonly governanceService: GovernanceService) {}
@@ -17,16 +17,16 @@ export class GovernanceUsageExamples {
    */
   async createFundingProposal() {
     const proposal = await this.governanceService.createProposal({
-      proposer: 'proposer-stellar-address',
-      description: 'Allocate 50,000 USDC to development team for Q1 2026',
+      proposer: "proposer-stellar-address",
+      description: "Allocate 50,000 USDC to development team for Q1 2026",
       actions: [
         {
           actionType: ActionType.TRANSFER_FUNDS,
-          target: 'dev-team-wallet-address',
+          target: "dev-team-wallet-address",
           parameters: {
-            amount: '50000000000', // 50,000 USDC (6 decimals)
-            token: 'USDC',
-            memo: 'Q1 2026 Development Budget',
+            amount: "50000000000", // 50,000 USDC (6 decimals)
+            token: "USDC",
+            memo: "Q1 2026 Development Budget",
           },
         },
       ],
@@ -42,32 +42,32 @@ export class GovernanceUsageExamples {
    */
   async createMultiActionProposal() {
     const proposal = await this.governanceService.createProposal({
-      proposer: 'proposer-address',
-      description: 'Platform upgrade and team expansion',
+      proposer: "proposer-address",
+      description: "Platform upgrade and team expansion",
       actions: [
         {
           actionType: ActionType.UPGRADE_CONTRACT,
-          target: 'platform-contract-address',
+          target: "platform-contract-address",
           parameters: {
-            newVersion: '2.0.0',
-            migrationScript: 'upgrade-v2.js',
+            newVersion: "2.0.0",
+            migrationScript: "upgrade-v2.js",
           },
         },
         {
           actionType: ActionType.ADD_MEMBER,
-          target: 'new-member-address',
+          target: "new-member-address",
           parameters: {
-            role: 'developer',
-            votingPower: '1000000000000',
+            role: "developer",
+            votingPower: "1000000000000",
           },
         },
         {
           actionType: ActionType.TRANSFER_FUNDS,
-          target: 'new-member-address',
+          target: "new-member-address",
           parameters: {
-            amount: '5000000000',
-            token: 'USDC',
-            memo: 'Welcome bonus',
+            amount: "5000000000",
+            token: "USDC",
+            memo: "Welcome bonus",
           },
         },
       ],
@@ -84,10 +84,11 @@ export class GovernanceUsageExamples {
       proposalId,
       voter: voterAddress,
       support: true,
-      reason: 'This proposal aligns with our long-term strategy and has clear deliverables.',
+      reason:
+        "This proposal aligns with our long-term strategy and has clear deliverables.",
     });
 
-    console.log('Vote cast successfully');
+    console.log("Vote cast successfully");
   }
 
   /**
@@ -98,7 +99,7 @@ export class GovernanceUsageExamples {
       proposalId,
       voter: voterAddress,
       voteType: VoteType.ABSTAIN,
-      reason: 'Conflict of interest - I am part of the receiving team',
+      reason: "Conflict of interest - I am part of the receiving team",
     });
   }
 
@@ -108,9 +109,9 @@ export class GovernanceUsageExamples {
   async executeProposalAfterTimelock(proposalId: string) {
     try {
       await this.governanceService.executeProposal(proposalId);
-      console.log('Proposal executed successfully');
+      console.log("Proposal executed successfully");
     } catch (error) {
-      console.error('Execution failed:', error.message);
+      console.error("Execution failed:", error);
       // Might fail if timelock hasn't expired or quorum wasn't met
     }
   }
@@ -122,10 +123,10 @@ export class GovernanceUsageExamples {
     await this.governanceService.vetoProposal(
       proposalId,
       vetoerAddress,
-      'Security audit revealed critical vulnerabilities in the proposed contract upgrade',
+      "Security audit revealed critical vulnerabilities in the proposed contract upgrade",
     );
 
-    console.log('Proposal vetoed');
+    console.log("Proposal vetoed");
   }
 
   /**
@@ -134,10 +135,10 @@ export class GovernanceUsageExamples {
   async monitorProposal(proposalId: string) {
     const proposal = await this.governanceService.getProposal(proposalId);
 
-    console.log('Proposal Status:', proposal.status);
-    console.log('Votes For:', proposal.votesFor);
-    console.log('Votes Against:', proposal.votesAgainst);
-    console.log('Votes Abstain:', proposal.votesAbstain);
+    console.log("Proposal Status:", proposal.status);
+    console.log("Votes For:", proposal.votesFor);
+    console.log("Votes Against:", proposal.votesAgainst);
+    console.log("Votes Abstain:", proposal.votesAbstain);
 
     // Calculate participation
     const totalVotes =
@@ -171,13 +172,13 @@ export class GovernanceUsageExamples {
    */
   async getActiveProposals() {
     const proposals = await this.governanceService.getProposals();
-    
+
     const active = proposals.filter(
-      (p) => p.status === 'active' || p.status === 'pending',
+      (p) => p.status === "active" || p.status === "pending",
     );
 
     console.log(`Found ${active.length} active proposals`);
-    
+
     return active.map((p) => ({
       id: p.id,
       description: p.description,
@@ -192,14 +193,14 @@ export class GovernanceUsageExamples {
    */
   async createParameterUpdateProposal() {
     const proposal = await this.governanceService.createProposal({
-      proposer: 'proposer-address',
-      description: 'Increase quorum requirement to 65% for better governance',
+      proposer: "proposer-address",
+      description: "Increase quorum requirement to 65% for better governance",
       actions: [
         {
           actionType: ActionType.UPDATE_PARAMETER,
-          target: 'governance-config',
+          target: "governance-config",
           parameters: {
-            parameter: 'quorumPercentage',
+            parameter: "quorumPercentage",
             oldValue: 51,
             newValue: 65,
           },
@@ -216,22 +217,23 @@ export class GovernanceUsageExamples {
    */
   async finalizeProposal(proposalId: string) {
     await this.governanceService.finalizeProposal(proposalId);
-    
+
     const proposal = await this.governanceService.getProposal(proposalId);
-    
-    console.log('Proposal finalized with status:', proposal.status);
-    
-    if (proposal.status === 'queued') {
-      console.log('Proposal succeeded and is queued for execution');
-      console.log('Execution time:', proposal.executionTime);
-      
+
+    console.log("Proposal finalized with status:", proposal.status);
+
+    if (proposal.status === "queued") {
+      console.log("Proposal succeeded and is queued for execution");
+      console.log("Execution time:", proposal.executionTime);
+
       const now = new Date();
-      const timeUntilExecution = proposal.executionTime.getTime() - now.getTime();
+      const timeUntilExecution =
+        proposal.executionTime.getTime() - now.getTime();
       const hoursUntilExecution = timeUntilExecution / (1000 * 60 * 60);
-      
+
       console.log(`Can be executed in ${hoursUntilExecution.toFixed(2)} hours`);
     }
-    
+
     return proposal;
   }
 }
@@ -242,20 +244,20 @@ export class GovernanceUsageExamples {
 export async function completeGovernanceWorkflow(
   governanceService: GovernanceService,
 ) {
-  console.log('=== DAO Governance Workflow Example ===\n');
+  console.log("=== DAO Governance Workflow Example ===\n");
 
   // Step 1: Create proposal
-  console.log('Step 1: Creating proposal...');
+  console.log("Step 1: Creating proposal...");
   const proposal = await governanceService.createProposal({
-    proposer: 'proposer-address',
-    description: 'Fund marketing campaign for Q1 2026',
+    proposer: "proposer-address",
+    description: "Fund marketing campaign for Q1 2026",
     actions: [
       {
         actionType: ActionType.TRANSFER_FUNDS,
-        target: 'marketing-wallet',
+        target: "marketing-wallet",
         parameters: {
-          amount: '25000000000',
-          token: 'USDC',
+          amount: "25000000000",
+          token: "USDC",
         },
       },
     ],
@@ -263,50 +265,52 @@ export async function completeGovernanceWorkflow(
   console.log(`✓ Proposal created: ${proposal.id}\n`);
 
   // Step 2: Wait for voting to start (in real scenario)
-  console.log('Step 2: Waiting for voting period to start...');
+  console.log("Step 2: Waiting for voting period to start...");
   console.log(`Voting starts at: ${proposal.votingStartTime}`);
   console.log(`Voting ends at: ${proposal.votingEndTime}\n`);
 
   // Step 3: Cast votes
-  console.log('Step 3: Casting votes...');
+  console.log("Step 3: Casting votes...");
   await governanceService.vote({
     proposalId: proposal.id,
-    voter: 'voter-1',
+    voter: "voter-1",
     support: true,
-    reason: 'Marketing is essential for growth',
+    reason: "Marketing is essential for growth",
   });
-  console.log('✓ Vote 1 cast (FOR)');
+  console.log("✓ Vote 1 cast (FOR)");
 
   await governanceService.vote({
     proposalId: proposal.id,
-    voter: 'voter-2',
+    voter: "voter-2",
     support: true,
   });
-  console.log('✓ Vote 2 cast (FOR)');
+  console.log("✓ Vote 2 cast (FOR)");
 
   await governanceService.vote({
     proposalId: proposal.id,
-    voter: 'voter-3',
+    voter: "voter-3",
     support: false,
-    reason: 'Budget is too high',
+    reason: "Budget is too high",
   });
-  console.log('✓ Vote 3 cast (AGAINST)\n');
+  console.log("✓ Vote 3 cast (AGAINST)\n");
 
   // Step 4: Finalize after voting ends
-  console.log('Step 4: Finalizing proposal...');
+  console.log("Step 4: Finalizing proposal...");
   await governanceService.finalizeProposal(proposal.id);
   const finalizedProposal = await governanceService.getProposal(proposal.id);
-  console.log(`✓ Proposal finalized with status: ${finalizedProposal.status}\n`);
+  console.log(
+    `✓ Proposal finalized with status: ${finalizedProposal.status}\n`,
+  );
 
   // Step 5: Execute if succeeded
-  if (finalizedProposal.status === 'queued') {
-    console.log('Step 5: Waiting for timelock to expire...');
+  if (finalizedProposal.status === "queued") {
+    console.log("Step 5: Waiting for timelock to expire...");
     console.log(`Execution time: ${finalizedProposal.executionTime}`);
-    
+
     // In real scenario, wait for timelock
     // await governanceService.executeProposal(proposal.id);
-    console.log('(Execution would happen after timelock expires)\n');
+    console.log("(Execution would happen after timelock expires)\n");
   }
 
-  console.log('=== Workflow Complete ===');
+  console.log("=== Workflow Complete ===");
 }

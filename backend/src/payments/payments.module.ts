@@ -32,8 +32,9 @@ import { IdempotencyInterceptor } from "../common/idempotency/idempotency.interc
     PaymentProcessorService,
     PaymentGateway,
     IdempotencyService,
+    AnalyticsModule,
     IdempotencyInterceptor,
   ],
   exports: [PaymentsService, PaymentProcessorService, IdempotencyService],
 })
-export class PaymentsModule { }
+export class PaymentsModule {}

@@ -4,25 +4,25 @@ import {
   Column,
   ManyToOne,
   CreateDateColumn,
-} from 'typeorm';
-import { SplitShortLink } from './split-short-link.entity';
+} from "typeorm";
+import { SplitShortLink } from "./split-short-link.entity";
 
-@Entity('link_access_logs')
+@Entity("link_access_logs")
 export class LinkAccessLog {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
 
-  @ManyToOne(() => SplitShortLink, { onDelete: 'CASCADE' })
-  shortLink: SplitShortLink;
+  @ManyToOne(() => SplitShortLink, { onDelete: "CASCADE" })
+  shortLink!: SplitShortLink;
 
   @CreateDateColumn()
-  accessedAt: Date;
+  accessedAt!: Date;
 
   @Column()
-  ipHash: string;
+  ipHash!: string;
 
   @Column()
-  userAgent: string;
+  userAgent!: string;
 
   @Column({ nullable: true })
   resolvedUserId?: string;

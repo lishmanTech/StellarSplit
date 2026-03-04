@@ -4,6 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
+  Optional,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -15,6 +16,7 @@ import { Split } from "../entities/split.entity";
 import { EmailService } from "../email/email.service";
 import { MultiCurrencyService } from "../multi-currency/multi-currency.service";
 import { EventsGateway } from "../gateway/events.gateway";
+import { AnalyticsService } from "@/analytics/analytics.service";
 
 @Injectable()
 export class PaymentProcessorService {
@@ -30,7 +32,7 @@ export class PaymentProcessorService {
     @InjectRepository(Split) private splitRepository: Repository<Split>,
     private readonly emailService: EmailService,
     private readonly multiCurrencyService: MultiCurrencyService,
-    private readonly analyticsService?: import("../analytics/analytics.service").AnalyticsService,
+    @Optional() private readonly analyticsService?: AnalyticsService,
   ) {}
   /**
    * Process a payment submission
@@ -256,11 +258,16 @@ export class PaymentProcessorService {
     await this.updateSplitAmountPaid(splitId);
 
     // Send notification
-    this.sendPaymentNotification(participantId, "partial_payment_received", {
-      txHash,
-      amount: verificationResult.amount,
-      expected: participant.amountOwed,
-    }, splitId);
+    this.sendPaymentNotification(
+      participantId,
+      "partial_payment_received",
+      {
+        txHash,
+        amount: verificationResult.amount,
+        expected: participant.amountOwed,
+      },
+      splitId,
+    );
 
     // Invalidate analytics cache for this user and optionally refresh materialized views
     try {
@@ -300,10 +307,15 @@ export class PaymentProcessorService {
     await this.updateSplitAmountPaid(splitId);
 
     // Send notification
-    this.sendPaymentNotification(participantId, "payment_confirmed", {
-      txHash,
-      amount: verificationResult.amount,
-    }, splitId);
+    this.sendPaymentNotification(
+      participantId,
+      "payment_confirmed",
+      {
+        txHash,
+        amount: verificationResult.amount,
+      },
+      splitId,
+    );
 
     // Trigger Email Notification
     this.triggerPaymentConfirmationEmail(participantId, {

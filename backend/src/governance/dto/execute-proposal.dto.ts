@@ -1,21 +1,21 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty } from "class-validator";
 
 export class ExecuteProposalDto {
   @IsString()
   @IsNotEmpty()
-  proposalId: string;
+  proposalId!: string;
 }
 
 export class VetoProposalDto {
   @IsString()
   @IsNotEmpty()
-  proposalId: string;
+  proposalId!: string;
 
   @IsString()
   @IsNotEmpty()
-  vetoer: string;
+  vetoer!: string;
 
   @IsString()
   @IsNotEmpty()
-  reason: string;
+  reason!: string;
 }
