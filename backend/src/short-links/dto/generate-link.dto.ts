@@ -1,12 +1,12 @@
-import { IsEnum, IsOptional, IsUUID, IsNumber, Min } from 'class-validator';
-import { LinkType } from '../entities/split-short-link.entity';
+import { IsEnum, IsOptional, IsUUID, IsNumber, Min } from "class-validator";
+import { LinkType } from "../entities/split-short-link.entity";
 
 export class GenerateLinkDto {
   @IsUUID()
-  splitId: string;
+  splitId!: string;
 
   @IsEnum(LinkType)
-  linkType: LinkType;
+  linkType!: LinkType;
 
   @IsOptional()
   @IsUUID()

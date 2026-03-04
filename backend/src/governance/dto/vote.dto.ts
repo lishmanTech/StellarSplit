@@ -1,17 +1,23 @@
-import { IsString, IsNotEmpty, IsBoolean, IsEnum, IsOptional } from 'class-validator';
-import { VoteType } from '../entities/vote.entity';
+import {
+  IsString,
+  IsNotEmpty,
+  IsBoolean,
+  IsEnum,
+  IsOptional,
+} from "class-validator";
+import { VoteType } from "../entities/vote.entity";
 
 export class CastVoteDto {
   @IsString()
   @IsNotEmpty()
-  proposalId: string;
+  proposalId!: string;
 
   @IsString()
   @IsNotEmpty()
-  voter: string;
+  voter!: string;
 
   @IsBoolean()
-  support: boolean;
+  support!: boolean;
 
   @IsString()
   @IsOptional()
@@ -21,14 +27,14 @@ export class CastVoteDto {
 export class CastVoteWithTypeDto {
   @IsString()
   @IsNotEmpty()
-  proposalId: string;
+  proposalId!: string;
 
   @IsString()
   @IsNotEmpty()
-  voter: string;
+  voter!: string;
 
   @IsEnum(VoteType)
-  voteType: VoteType;
+  voteType!: VoteType;
 
   @IsString()
   @IsOptional()

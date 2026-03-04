@@ -1,19 +1,18 @@
-import { Module, HttpModule } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserCurrencyPreference } from './entities/user-currency-preference.entity';
-import { CurrencyRateCache } from './entities/currency-rate-cache.entity';
-import { UserCurrencyService } from './user-currency.service';
-import { UserCurrencyController } from './user-currency.controller';
-import { GeoModule } from './geo/geo.module';
+import { CurrencyRateCache } from "@/currency/entities/currency-rate-cache.entity";
+import { UserCurrencyPreference } from "@/currency/entities/user-currency-preference.entity";
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { CurrencyService } from "./user-currency.service";
+import { GeoModule } from "@/currency/geo/geo.module";
+import { CurrencyController } from "./user-currency.controller";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserCurrencyPreference, CurrencyRateCache]),
     GeoModule,
-    HttpModule,
   ],
-  providers: [UserCurrencyService],
-  controllers: [UserCurrencyController],
-  exports: [UserCurrencyService],
+  providers: [CurrencyService],
+  controllers: [CurrencyController],
+  exports: [CurrencyService],
 })
 export class UserCurrencyModule {}

@@ -5,50 +5,50 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
-} from 'typeorm';
-import { Proposal } from './proposal.entity';
+} from "typeorm";
+import { Proposal } from "./proposal.entity";
 
 export enum ActionType {
-  TRANSFER_FUNDS = 'transfer_funds',
-  UPDATE_PARAMETER = 'update_parameter',
-  ADD_MEMBER = 'add_member',
-  REMOVE_MEMBER = 'remove_member',
-  UPGRADE_CONTRACT = 'upgrade_contract',
-  CUSTOM = 'custom',
+  TRANSFER_FUNDS = "transfer_funds",
+  UPDATE_PARAMETER = "update_parameter",
+  ADD_MEMBER = "add_member",
+  REMOVE_MEMBER = "remove_member",
+  UPGRADE_CONTRACT = "upgrade_contract",
+  CUSTOM = "custom",
 }
 
-@Entity('proposal_actions')
+@Entity("proposal_actions")
 export class ProposalAction {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
 
   @Column()
-  proposalId: string;
+  proposalId!: string;
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: ActionType,
   })
-  actionType: ActionType;
+  actionType!: ActionType;
 
   @Column()
-  target: string;
+  target!: string;
 
-  @Column({ type: 'jsonb' })
-  parameters: Record<string, any>;
+  @Column({ type: "jsonb" })
+  parameters!: Record<string, any>;
 
-  @Column({ type: 'text', nullable: true })
-  calldata: string;
+  @Column({ type: "text", nullable: true })
+  calldata!: string;
 
   @Column({ default: false })
-  executed: boolean;
+  executed!: boolean;
 
   @ManyToOne(() => Proposal, (proposal) => proposal.actions, {
-    onDelete: 'CASCADE',
+    onDelete: "CASCADE",
   })
-  @JoinColumn({ name: 'proposalId' })
-  proposal: Proposal;
+  @JoinColumn({ name: "proposalId" })
+  proposal!: Proposal;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 }

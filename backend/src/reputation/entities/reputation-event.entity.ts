@@ -1,23 +1,28 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
-import { ReputationEventType } from '../enums/reputation-event-type.enum';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+} from "typeorm";
+import { ReputationEventType } from "../enums/reputation-event-type.enum";
 
-@Entity('reputation_events')
+@Entity("reputation_events")
 export class ReputationEvent {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
 
   @Column()
-  userId: string;
+  userId!: string;
 
-  @Column({ type: 'enum', enum: ReputationEventType })
-  eventType: ReputationEventType;
+  @Column({ type: "enum", enum: ReputationEventType })
+  eventType!: ReputationEventType;
 
-  @Column('decimal')
-  scoreImpact: number;
+  @Column("decimal")
+  scoreImpact!: number;
 
   @Column()
-  splitId: string;
+  splitId!: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 }

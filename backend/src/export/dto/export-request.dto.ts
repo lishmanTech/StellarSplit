@@ -11,32 +11,32 @@ import {
   IsEmail,
   ValidateNested,
   IsObject,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-import { ExportFormat, ReportType } from '../entities/export-job.entity';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+} from "class-validator";
+import { Type } from "class-transformer";
+import { ExportFormat, ReportType } from "../entities/export-job.entity";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class ExportFilterDto {
   @ApiPropertyOptional({
-    description: 'Start date for filtering (ISO format)',
-    example: '2024-01-01',
+    description: "Start date for filtering (ISO format)",
+    example: "2024-01-01",
   })
   @IsOptional()
   @IsDateString()
   startDate?: string;
 
   @ApiPropertyOptional({
-    description: 'End date for filtering (ISO format)',
-    example: '2024-12-31',
+    description: "End date for filtering (ISO format)",
+    example: "2024-12-31",
   })
   @IsOptional()
   @IsDateString()
   endDate?: string;
 
   @ApiPropertyOptional({
-    description: 'Filter by expense categories',
+    description: "Filter by expense categories",
     type: [String],
-    example: ['food', 'transportation', 'entertainment'],
+    example: ["food", "transportation", "entertainment"],
   })
   @IsOptional()
   @IsArray()
@@ -44,7 +44,7 @@ export class ExportFilterDto {
   categories?: string[];
 
   @ApiPropertyOptional({
-    description: 'Filter by participant user IDs',
+    description: "Filter by participant user IDs",
     type: [String],
   })
   @IsOptional()
@@ -53,7 +53,7 @@ export class ExportFilterDto {
   participants?: string[];
 
   @ApiPropertyOptional({
-    description: 'Minimum amount filter',
+    description: "Minimum amount filter",
     example: 10,
   })
   @IsOptional()
@@ -62,7 +62,7 @@ export class ExportFilterDto {
   minAmount?: number;
 
   @ApiPropertyOptional({
-    description: 'Maximum amount filter',
+    description: "Maximum amount filter",
     example: 1000,
   })
   @IsOptional()
@@ -71,15 +71,15 @@ export class ExportFilterDto {
   maxAmount?: number;
 
   @ApiPropertyOptional({
-    description: 'Filter by currency',
-    example: 'XLM',
+    description: "Filter by currency",
+    example: "XLM",
   })
   @IsOptional()
   @IsString()
   currency?: string;
 
   @ApiPropertyOptional({
-    description: 'Only include expenses paid by me',
+    description: "Only include expenses paid by me",
     example: true,
   })
   @IsOptional()
@@ -87,7 +87,7 @@ export class ExportFilterDto {
   paidByMe?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Only include expenses owed to me',
+    description: "Only include expenses owed to me",
     example: true,
   })
   @IsOptional()
@@ -95,7 +95,7 @@ export class ExportFilterDto {
   owedToMe?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Filter by settlement status',
+    description: "Filter by settlement status",
     example: true,
   })
   @IsOptional()
@@ -105,7 +105,7 @@ export class ExportFilterDto {
 
 export class ExportSettingsDto {
   @ApiPropertyOptional({
-    description: 'Include tax-related fields in export',
+    description: "Include tax-related fields in export",
     default: false,
   })
   @IsOptional()
@@ -113,7 +113,7 @@ export class ExportSettingsDto {
   includeTaxFields?: boolean = false;
 
   @ApiPropertyOptional({
-    description: 'Include receipt URLs/attachments',
+    description: "Include receipt URLs/attachments",
     default: false,
   })
   @IsOptional()
@@ -121,7 +121,7 @@ export class ExportSettingsDto {
   includeReceipts?: boolean = false;
 
   @ApiPropertyOptional({
-    description: 'Group results by category',
+    description: "Group results by category",
     default: false,
   })
   @IsOptional()
@@ -129,7 +129,7 @@ export class ExportSettingsDto {
   groupByCategory?: boolean = false;
 
   @ApiPropertyOptional({
-    description: 'Group results by month',
+    description: "Group results by month",
     default: false,
   })
   @IsOptional()
@@ -137,7 +137,7 @@ export class ExportSettingsDto {
   groupByMonth?: boolean = false;
 
   @ApiPropertyOptional({
-    description: 'Include charts in PDF reports',
+    description: "Include charts in PDF reports",
     default: true,
   })
   @IsOptional()
@@ -145,7 +145,7 @@ export class ExportSettingsDto {
   includeChart?: boolean = true;
 
   @ApiPropertyOptional({
-    description: 'Include summary section',
+    description: "Include summary section",
     default: true,
   })
   @IsOptional()
@@ -153,21 +153,21 @@ export class ExportSettingsDto {
   includeSummary?: boolean = true;
 
   @ApiPropertyOptional({
-    description: 'Logo URL for PDF header',
+    description: "Logo URL for PDF header",
   })
   @IsOptional()
   @IsString()
   logoUrl?: string;
 
   @ApiPropertyOptional({
-    description: 'Company name for tax reports',
+    description: "Company name for tax reports",
   })
   @IsOptional()
   @IsString()
   companyName?: string;
 
   @ApiPropertyOptional({
-    description: 'Tax ID for reporting',
+    description: "Tax ID for reporting",
   })
   @IsOptional()
   @IsString()
@@ -177,7 +177,7 @@ export class ExportSettingsDto {
 export class CreateExportDto {
   @ApiProperty({
     enum: ExportFormat,
-    description: 'Export file format',
+    description: "Export file format",
     example: ExportFormat.CSV,
   })
   @IsEnum(ExportFormat)
@@ -185,14 +185,14 @@ export class CreateExportDto {
 
   @ApiProperty({
     enum: ReportType,
-    description: 'Type of report to generate',
+    description: "Type of report to generate",
     example: ReportType.MONTHLY_SUMMARY,
   })
   @IsEnum(ReportType)
   reportType!: ReportType;
 
   @ApiPropertyOptional({
-    description: 'Filters to apply to the export',
+    description: "Filters to apply to the export",
     type: ExportFilterDto,
   })
   @IsOptional()
@@ -201,7 +201,7 @@ export class CreateExportDto {
   filters?: ExportFilterDto;
 
   @ApiPropertyOptional({
-    description: 'Export settings and options',
+    description: "Export settings and options",
     type: ExportSettingsDto,
   })
   @IsOptional()
@@ -210,15 +210,15 @@ export class CreateExportDto {
   settings?: ExportSettingsDto;
 
   @ApiPropertyOptional({
-    description: 'Email address to send the export to',
-    example: 'user@example.com',
+    description: "Email address to send the export to",
+    example: "user@example.com",
   })
   @IsOptional()
   @IsEmail()
   emailRecipient?: string;
 
   @ApiPropertyOptional({
-    description: 'Whether this is for tax compliance',
+    description: "Whether this is for tax compliance",
     default: false,
   })
   @IsOptional()
@@ -226,7 +226,7 @@ export class CreateExportDto {
   isTaxCompliant?: boolean = false;
 
   @ApiPropertyOptional({
-    description: 'Tax year for compliance reports',
+    description: "Tax year for compliance reports",
     example: 2024,
   })
   @IsOptional()
@@ -238,15 +238,15 @@ export class CreateExportDto {
 
 export class ScheduleExportDto extends CreateExportDto {
   @ApiProperty({
-    description: 'Cron expression for scheduling',
-    example: '0 9 1 * *', // 9 AM on 1st of every month
+    description: "Cron expression for scheduling",
+    example: "0 9 1 * *", // 9 AM on 1st of every month
   })
   @IsString()
   scheduleCron!: string;
 
   @ApiPropertyOptional({
-    description: 'Name for the scheduled export',
-    example: 'Monthly Tax Report',
+    description: "Name for the scheduled export",
+    example: "Monthly Tax Report",
   })
   @IsOptional()
   @IsString()
@@ -255,35 +255,43 @@ export class ScheduleExportDto extends CreateExportDto {
 
 export class CreateExportTemplateDto {
   @ApiProperty({
-    description: 'Template name',
-    example: 'Monthly Expense Report',
+    description: "Template name",
+    example: "Monthly Expense Report",
   })
   @IsString()
   name!: string;
 
   @ApiPropertyOptional({
-    description: 'Template description',
+    description: "Template description",
   })
   @IsOptional()
   @IsString()
   description?: string;
 
+  @IsOptional()
+  @IsString()
+  isScheduled?: boolean = false;
+
+  @IsOptional()
+  @IsString()
+  scheduleCron?: string;
+
   @ApiProperty({
     enum: ExportFormat,
-    description: 'Export file format',
+    description: "Export file format",
   })
   @IsEnum(ExportFormat)
   format!: ExportFormat;
 
   @ApiProperty({
     enum: ReportType,
-    description: 'Type of report',
+    description: "Type of report",
   })
   @IsEnum(ReportType)
   reportType!: ReportType;
 
   @ApiProperty({
-    description: 'Filters to apply',
+    description: "Filters to apply",
     type: ExportFilterDto,
   })
   @ValidateNested()
@@ -291,7 +299,7 @@ export class CreateExportTemplateDto {
   filters!: ExportFilterDto;
 
   @ApiPropertyOptional({
-    description: 'Export settings',
+    description: "Export settings",
     type: ExportSettingsDto,
   })
   @IsOptional()
@@ -300,7 +308,7 @@ export class CreateExportTemplateDto {
   settings?: ExportSettingsDto;
 
   @ApiPropertyOptional({
-    description: 'Set as default template',
+    description: "Set as default template",
     default: false,
   })
   @IsOptional()

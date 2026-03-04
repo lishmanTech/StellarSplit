@@ -1,11 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
-import { UserCurrencyPreference } from './entities/user-currency-preference.entity';
-import { CurrencyRateCache } from './entities/currency-rate-cache.entity';
-import { GeoService } from './geo/geo.service';
-import { PreferredAsset } from './enums/preferred-asset.enum';
-import axios from 'axios';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, MoreThan } from "typeorm";
+import axios from "axios";
+import { UserCurrencyPreference } from "@/currency/entities/user-currency-preference.entity";
+import { CurrencyRateCache } from "@/currency/entities/currency-rate-cache.entity";
+import { GeoService } from "@/currency/geo/geo.service";
 
 @Injectable()
 export class CurrencyService {
@@ -31,7 +30,7 @@ export class CurrencyService {
 
       pref = this.prefRepo.create({
         userId,
-        preferredCurrency: geo.currency || 'USD',
+        preferredCurrency: geo.currency || "USD",
         detectedCountry: geo.countryCode,
         detectedCurrency: geo.currency,
         autoDetected: true,
@@ -72,7 +71,7 @@ export class CurrencyService {
       baseCurrency: base,
       targetCurrency: target,
       rate,
-      source: 'exchangerate-api',
+      source: "exchangerate-api",
       fetchedAt: now,
       expiresAt: new Date(now.getTime() + 10 * 60 * 1000),
     });
@@ -81,22 +80,22 @@ export class CurrencyService {
   }
 
   private async fetchRateFromApi(base: string, target: string) {
-    if (target === 'XLM' || target === 'USDC') {
+    if (target === "XLM" || target === "USDC") {
       const { data } = await axios.get(
-        `https://api.coingecko.com/api/v3/simple/price?ids=stellar,usd-coin&vs_currencies=${base.toLowerCase()}`
+        `https://api.coingecko.com/api/v3/simple/price?ids=stellar,usd-coin&vs_currencies=${base.toLowerCase()}`,
       );
 
-      if (target === 'XLM') {
+      if (target === "XLM") {
         return 1 / data.stellar[base.toLowerCase()];
       }
 
-      if (target === 'USDC') {
-        return 1 / data['usd-coin'][base.toLowerCase()];
+      if (target === "USDC") {
+        return 1 / data["usd-coin"][base.toLowerCase()];
       }
     }
 
     const { data } = await axios.get(
-      `https://api.exchangerate-api.com/v4/latest/${base}`
+      `https://api.exchangerate-api.com/v4/latest/${base}`,
     );
 
     return data.rates[target] || 1;

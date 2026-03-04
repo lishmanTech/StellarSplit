@@ -1,18 +1,27 @@
-import { IsString, IsNotEmpty, IsArray, ValidateNested, IsOptional, IsInt, Min, Max } from 'class-validator';
-import { Type } from 'class-transformer';
-import { ActionType } from '../entities/proposal-action.entity';
+import {
+  IsString,
+  IsNotEmpty,
+  IsArray,
+  ValidateNested,
+  IsOptional,
+  IsInt,
+  Min,
+  Max,
+} from "class-validator";
+import { Type } from "class-transformer";
+import { ActionType } from "../entities/proposal-action.entity";
 
 export class ProposalActionDto {
   @IsString()
   @IsNotEmpty()
-  actionType: ActionType;
+  actionType!: ActionType;
 
   @IsString()
   @IsNotEmpty()
-  target: string;
+  target!: string;
 
   @IsNotEmpty()
-  parameters: Record<string, any>;
+  parameters!: Record<string, any>;
 
   @IsString()
   @IsOptional()
@@ -22,16 +31,16 @@ export class ProposalActionDto {
 export class CreateProposalDto {
   @IsString()
   @IsNotEmpty()
-  proposer: string;
+  proposer!: string;
 
   @IsString()
   @IsNotEmpty()
-  description: string;
+  description!: string;
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ProposalActionDto)
-  actions: ProposalActionDto[];
+  actions!: ProposalActionDto[];
 
   @IsInt()
   @Min(1)

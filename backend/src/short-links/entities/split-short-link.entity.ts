@@ -1,3 +1,5 @@
+import { Participant } from "@/entities/participant.entity";
+import { Split } from "@/entities/split.entity";
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -5,47 +7,45 @@ import {
   ManyToOne,
   CreateDateColumn,
   Index,
-} from 'typeorm';
-import { Split } from '../../splits/entities/split.entity';
-import { Participant } from '../../participants/entities/participant.entity';
+} from "typeorm";
 
 export enum LinkType {
-  VIEW_SPLIT = 'view_split',
-  JOIN_SPLIT = 'join_split',
-  PAY_SHARE = 'pay_share',
-  NFC_TAP = 'nfc_tap',
+  VIEW_SPLIT = "view_split",
+  JOIN_SPLIT = "join_split",
+  PAY_SHARE = "pay_share",
+  NFC_TAP = "nfc_tap",
 }
 
-@Entity('split_short_links')
+@Entity("split_short_links")
 export class SplitShortLink {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
 
-  @ManyToOne(() => Split, { onDelete: 'CASCADE' })
-  split: Split;
+  @ManyToOne(() => Split, { onDelete: "CASCADE" })
+  split!: Split;
 
   @Index({ unique: true })
   @Column({ length: 6 })
-  shortCode: string;
+  shortCode!: string;
 
-  @Column({ type: 'enum', enum: LinkType })
-  linkType: LinkType;
+  @Column({ type: "enum", enum: LinkType })
+  linkType!: LinkType;
 
   @ManyToOne(() => Participant, { nullable: true })
   targetParticipant?: Participant;
 
   @Column({ default: 0 })
-  accessCount: number;
+  accessCount!: number;
 
   @Column({ nullable: true })
   maxAccesses?: number;
 
   @Column()
-  expiresAt: Date;
+  expiresAt!: Date;
 
   @Column()
-  createdBy: string; // wallet address
+  createdBy!: string; // wallet address
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 }
