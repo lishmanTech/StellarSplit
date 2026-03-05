@@ -5,6 +5,7 @@ NestJS backend for StellarSplit - a crypto-powered bill splitting application.
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 18+
 - PostgreSQL 12+
 - npm
@@ -12,22 +13,27 @@ NestJS backend for StellarSplit - a crypto-powered bill splitting application.
 ### Installation
 
 1. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 2. **Configure environment variables:**
+
    ```bash
    cp .env.example .env
    ```
+
    Edit `.env` with your database credentials and configuration.
 
 3. **Build the project:**
+
    ```bash
    npm run build
    ```
 
 4. **Start the application:**
+
    ```bash
    # Development with live reload
    npm run dev:watch
@@ -41,6 +47,7 @@ The API will be available at `http://localhost:3000`
 ## 📚 API Documentation
 
 Once the application is running, visit:
+
 - **Swagger UI:** http://localhost:3000/api/docs
 - **OpenAPI JSON:** http://localhost:3000/api-docs
 
@@ -106,28 +113,34 @@ Returns the API health status:
 ## 📦 Dependencies
 
 ### Core
+
 - `@nestjs/core` - NestJS core framework
 - `@nestjs/common` - Common NestJS utilities
 - `reflect-metadata` - Metadata reflection API
 - `rxjs` - Reactive programming library
 
 ### Database
+
 - `@nestjs/typeorm` - TypeORM integration for NestJS
 - `typeorm` - ORM for database management
 - `pg` - PostgreSQL driver
 
 ### Configuration
+
 - `@nestjs/config` - Configuration management
 - `dotenv` - Environment variable loading
 
 ### Validation & Transformation
+
 - `class-validator` - Data validation decorators
 - `class-transformer` - DTO transformation
 
 ### API Documentation
+
 - `@nestjs/swagger` - Swagger/OpenAPI integration
 
 ### Development
+
 - `typescript` - TypeScript compiler
 - `ts-node` - Execute TypeScript directly
 - `nodemon` - Auto-reload on file changes
@@ -158,7 +171,7 @@ psql -U postgres -d stellarsplit_dev
 ✅ Environment variables loaded  
 ✅ Health check endpoint returns 200  
 ✅ Swagger API docs configured  
-✅ Backend starts without errors  
+✅ Backend starts without errors
 
 ## 🤝 Contributing
 
@@ -167,3 +180,7 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for development guidelines.
 ## 📝 License
 
 See [LICENSE](../../LICENSE) for licensing information.
+
+![CI](https://github.com/OlufunbiIK/StellarSplit/actions/workflows/ci.yml/badge.svg)
+![Deploy Backend](https://github.com/OlufunbiIK/StellarSplit/actions/workflows/deploy-backend.yml/badge.svg)
+![Deploy Frontend](https://github.com/OlufunbiIK/StellarSplit/actions/workflows/deploy-frontend.yml/badge.svg)
