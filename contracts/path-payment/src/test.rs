@@ -8,9 +8,14 @@ fn test_swap_failure_event_emitted() {
     use soroban_sdk::String;
 
     // Setup contract and environment
-    let (env, admin, token_a, token_b, _contract_id, client, _token_client, stellar_token) = setup_with_tokens();
+    let (env, admin, token_a, token_b, _contract_id, client, _token_client, stellar_token) =
+        setup_with_tokens();
     client.initialize(&admin);
-    client.set_rate(&Asset(token_a.clone()), &Asset(token_b.clone()), &10_000_000);
+    client.set_rate(
+        &Asset(token_a.clone()),
+        &Asset(token_b.clone()),
+        &10_000_000,
+    );
     let caller = Address::generate(&env);
     env.mock_all_auths();
     stellar_token.mint(&caller, &500_0000000i128);
@@ -33,7 +38,6 @@ fn test_swap_failure_event_emitted() {
     });
     assert!(found, "swap_fail event should be emitted on swap failure");
 }
-
 
 extern crate std;
 

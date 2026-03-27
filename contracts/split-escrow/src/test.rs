@@ -62,15 +62,15 @@ fn test_fee_deducted_and_sent_to_treasury_on_release() {
     client.set_treasury(&treasury);
     client.set_fee(&250u32); // 2.5%
 
-        let split_id = client.create_escrow(
-            &creator,
-            &String::from_str(&env, "Dinner"),
-            &10_000,
-            &Map::new(&env),
-            &None,
-           &false,
-            &None,
-        );
+    let split_id = client.create_escrow(
+        &creator,
+        &String::from_str(&env, "Dinner"),
+        &10_000,
+        &Map::new(&env),
+        &None,
+        &false,
+        &None,
+    );
     client.deposit(&split_id, &participant, &10_000);
     client.release_funds(&split_id);
 
@@ -91,15 +91,15 @@ fn test_admin_can_update_fee_and_treasury() {
     client.set_treasury(&treasury_a);
     client.set_fee(&100u32);
 
-        let split_a = client.create_escrow(
-            &creator,
-            &String::from_str(&env, "A"),
-            &1_000,
-            &Map::new(&env),
-            &None,
-           &false,
-            &None,
-        );
+    let split_a = client.create_escrow(
+        &creator,
+        &String::from_str(&env, "A"),
+        &1_000,
+        &Map::new(&env),
+        &None,
+        &false,
+        &None,
+    );
     client.deposit(&split_a, &participant, &1_000);
     client.release_funds(&split_a);
     assert_eq!(token_client.balance(&treasury_a), 10);
@@ -108,15 +108,15 @@ fn test_admin_can_update_fee_and_treasury() {
     client.set_treasury(&treasury_b);
     client.set_fee(&300u32);
 
-        let split_b = client.create_escrow(
-            &creator,
-            &String::from_str(&env, "B"),
-            &2_000,
-            &Map::new(&env),
-            &None,
-           &false,
-            &None,
-        );
+    let split_b = client.create_escrow(
+        &creator,
+        &String::from_str(&env, "B"),
+        &2_000,
+        &Map::new(&env),
+        &None,
+        &false,
+        &None,
+    );
     client.deposit(&split_b, &participant, &2_000);
     client.release_funds(&split_b);
     assert_eq!(token_client.balance(&treasury_b), 60);
@@ -234,10 +234,10 @@ fn test_default_max_participants_is_50() {
         &creator,
         &String::from_str(&env, "Cap default"),
         &100,
-           &Map::new(&env),
-           &None,
-           &false,
-           &None,
+        &Map::new(&env),
+        &None,
+        &false,
+        &None,
     );
     let escrow = client.get_escrow(&escrow_id);
     assert_eq!(escrow.max_participants, 50);
@@ -254,10 +254,10 @@ fn test_explicit_max_participants_stored_in_get_escrow() {
         &creator,
         &String::from_str(&env, "Explicit cap"),
         &300,
-           &Map::new(&env),
-           &Some(cap),
-           &false,
-           &None,
+        &Map::new(&env),
+        &Some(cap),
+        &false,
+        &None,
     );
     let escrow = client.get_escrow(&escrow_id);
     assert_eq!(escrow.max_participants, cap);
@@ -278,10 +278,10 @@ fn test_deposit_rejected_when_participant_cap_exceeded() {
         &creator,
         &String::from_str(&env, "Two max"),
         &3_000,
-           &Map::new(&env),
-           &Some(2u32),
-           &false,
-           &None,
+        &Map::new(&env),
+        &Some(2u32),
+        &false,
+        &None,
     );
 
     client.deposit(&escrow_id, &p1, &1_000);
@@ -306,10 +306,10 @@ fn test_existing_participant_can_deposit_again_without_increasing_count() {
         &creator,
         &String::from_str(&env, "Repeat"),
         &2_000,
-           &Map::new(&env),
-           &Some(1u32),
-           &false,
-           &None,
+        &Map::new(&env),
+        &Some(1u32),
+        &false,
+        &None,
     );
     client.deposit(&escrow_id, &p1, &1_000);
     client.deposit(&escrow_id, &p1, &1_000);
@@ -324,15 +324,15 @@ fn test_existing_participant_can_deposit_again_without_increasing_count() {
 fn test_note_stored_on_create_and_get_note() {
     let (env, client, _admin, creator, _p, _tc, _ta) = setup();
     let text = "Dinner at Luigi's — Friday night";
-        let split_id = client.create_escrow(
-            &creator,
-            &String::from_str(&env, "Bill"),
-            &100,
-            &Map::new(&env),
-            &None,
-            &false,
-            &Some(String::from_str(&env, text)),
-        );
+    let split_id = client.create_escrow(
+        &creator,
+        &String::from_str(&env, "Bill"),
+        &100,
+        &Map::new(&env),
+        &None,
+        &false,
+        &Some(String::from_str(&env, text)),
+    );
     assert_eq!(client.get_note(&split_id), String::from_str(&env, text));
     assert_eq!(
         client.get_escrow(&split_id).note,
@@ -345,15 +345,15 @@ fn test_creator_can_update_note_while_pending_and_ready() {
     let (env, client, _admin, creator, p1, _tc, _ta) = setup();
     client.set_treasury(&Address::generate(&env));
 
-        let split_id = client.create_escrow(
-            &creator,
-            &String::from_str(&env, "X"),
-            &2_000,
-            &Map::new(&env),
-            &None,
-            &false,
-            &None,
-        );
+    let split_id = client.create_escrow(
+        &creator,
+        &String::from_str(&env, "X"),
+        &2_000,
+        &Map::new(&env),
+        &None,
+        &false,
+        &None,
+    );
     client.set_note(&split_id, &String::from_str(&env, "v1"));
     assert_eq!(client.get_note(&split_id), String::from_str(&env, "v1"));
 

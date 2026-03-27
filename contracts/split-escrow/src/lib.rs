@@ -181,7 +181,6 @@ impl SplitEscrowContract {
         Ok(())
     }
 
-
     /// Public read of the escrow note (empty string if none was set).
     pub fn get_note(env: Env, split_id: u64) -> Result<String, Error> {
         let split = storage::get_split(&env, split_id).ok_or(Error::SplitNotFound)?;
@@ -220,11 +219,10 @@ impl SplitEscrowContract {
         }
 
         // Track per-participant deposited balances so we can refund on dispute outcomes.
-        let previous_balance = split
+        let previous_balance = split.balances.get(participant.clone()).unwrap_or(0i128);
+        split
             .balances
-            .get(participant.clone())
-            .unwrap_or(0i128);
-        split.balances.set(participant.clone(), previous_balance + amount);
+            .set(participant.clone(), previous_balance + amount);
 
         let token_address = storage::get_token(&env);
         let token_client = token::Client::new(&env, &token_address);
