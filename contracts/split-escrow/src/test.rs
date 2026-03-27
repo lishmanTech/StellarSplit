@@ -75,6 +75,7 @@ fn test_fee_deducted_and_sent_to_treasury_on_release() {
         &None,
         &false,
         &None,
+        &None,
     );
     client.deposit(&split_id, &participant, &10_000);
     client.release_funds(&split_id);
@@ -166,6 +167,7 @@ fn test_fees_collected_event_emitted() {
         &obligations,
         &None,
         &false,
+        &None,
         &None,
     );
     client.deposit(&split_id, &participant, &1_000);
@@ -302,6 +304,50 @@ fn test_upgrade_version_invalid_semver_fails() {
 }
 
 #[test]
+fn test_toggle_whitelist_allows_creator_to_restrict_access() {
+    let (env, client, _admin, creator, participant, _token_client, _token_admin) = setup();
+
+    let split_id = client.create_escrow(
+        &creator,
+        &String::from_str(&env, "Restricted"),
+        &2_000,
+        &None,
+        &None,
+        &None,
+    );
+
+    // Default: whitelist is disabled.
+    client.deposit(&split_id, &participant, &1_000);
+    assert_eq!(client.get_escrow(&split_id).deposited_amount, 1_000);
+
+    // Creator enables whitelist.
+    client.toggle_whitelist(&split_id, &true);
+
+    // Second deposit (from same participant or another) should fail if not whitelisted.
+    // We'll create a new participant and attempt to deposit.
+    let p2 = Address::generate(&env);
+    let res = client.try_deposit(&split_id, &p2, &500);
+    assert!(res.is_err());
+}
+
+#[test]
+fn test_create_escrow_with_metadata_stores_correctly() {
+    let (env, client, _admin, creator, _participant, _token_client, _token_admin) = setup();
+    let mut metadata = soroban_sdk::Map::new(&env);
+    metadata.set(String::from_str(&env, "key"), String::from_str(&env, "value"));
+
+    let split_id = client.create_escrow(
+        &creator,
+        &String::from_str(&env, "Metadata test"),
+        &1_000,
+        &None,
+        &None,
+        &Some(metadata.clone()),
+    );
+
+    let escrow = client.get_escrow(&split_id);
+    assert_eq!(escrow.metadata, metadata);
+}
 #[should_panic(expected = "HostError: Error(Contract, #15)")] // InvalidVersion
 fn test_initialize_invalid_version_fails() {
     let env = Env::default();

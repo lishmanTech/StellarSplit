@@ -101,6 +101,7 @@ impl SplitEscrowContract {
         max_participants: Option<u32>,
         whitelist_enabled: bool,
         note: Option<String>,
+        metadata: Option<Map<String, String>>,
     ) -> Result<u64, Error> {
         if !storage::has_admin(&env) {
             return Err(Error::NotInitialized);
@@ -140,9 +141,17 @@ impl SplitEscrowContract {
             None => String::from_str(&env, ""),
         };
 
-        let metadata = Map::new(&env);
+        let metadata_stored = match metadata {
+            Some(m) => {
+                validate_metadata(&m)?;
+                m
+            }
+            None => Map::new(&env),
+        };
 
         // Whitelist functionality is supported via add/remove calls, but default is disabled.
+        // Toggling is now possible via `toggle_whitelist`.
+        let whitelist_enabled = false;
 
         let split_id = storage::get_next_split_id(&env);
         storage::bump_next_split_id(&env);
@@ -156,7 +165,7 @@ impl SplitEscrowContract {
             split_id,
             creator,
             description,
-            metadata,
+            metadata: metadata_stored,
             total_amount,
             deposited_amount: 0,
             status: SplitStatus::Pending,
@@ -167,7 +176,7 @@ impl SplitEscrowContract {
             note: note_stored,
         };
         storage::set_split(&env, &split);
-        storage::set_whitelist_enabled(&env, split_id, false);
+        storage::set_whitelist_enabled(&env, split_id, whitelist_enabled);
         events::emit_split_created(&env, &split);
         Ok(split_id)
     }
@@ -253,7 +262,10 @@ impl SplitEscrowContract {
             return Err(Error::Unauthorized);
         }
 
-        if !participant_known(&split.participants, &participant) {
+        // Track per-participant deposited balances so we can refund on dispute outcomes.
+        let previous_balance = split.balances.get(participant.clone()).unwrap_or(0i128);
+
+        if previous_balance == 0 {
             if split.participants.len() >= split.max_participants {
                 return Err(Error::ParticipantCapExceeded);
             }
@@ -296,6 +308,13 @@ impl SplitEscrowContract {
         let split = storage::get_split(&env, split_id).ok_or(Error::SplitNotFound)?;
         split.creator.require_auth();
         storage::remove_from_whitelist(&env, split_id, &address);
+        Ok(())
+    }
+
+    pub fn toggle_whitelist(env: Env, split_id: u64, enabled: bool) -> Result<(), Error> {
+        let split = storage::get_split(&env, split_id).ok_or(Error::SplitNotFound)?;
+        split.creator.require_auth();
+        storage::set_whitelist_enabled(&env, split_id, enabled);
         Ok(())
     }
 
