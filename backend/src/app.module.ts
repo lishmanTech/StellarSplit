@@ -1,25 +1,51 @@
-
+// app.module.ts
+import { BullModule } from "@nestjs/bull";
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+import { EventEmitterModule } from "@nestjs/event-emitter";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { BullModule } from "@nestjs/bull";
+
 import * as dotenv from "dotenv";
 import * as path from "path";
-import databaseConfig from "./config/database.config";
-import appConfig from "./config/app.config";
-import { HealthModule } from "./modules/health/health.module";
-import { StellarModule } from "./stellar/stellar.module";
-import { PaymentsModule } from "./payments/payments.module";
-import { CurrencyModule } from "./modules/currency/currency.module";
-import { SplitsModule } from "./modules/splits/splits.module";
-import { ItemsModule } from "./modules/items/items.module";
-import { EmailModule } from "./email/email.module";
-import { RecurringSplitsModule } from './recurring-splits/recurring-splits.module';
-import { ReceiptsModule } from './receipts/receipts.module';
-import { SplitHistoryModule } from './split-history/split-history.module';
-import { ActivitiesModule } from './modules/activities/activities.module';
-import { SearchModule } from './search/search.module';
 
+import appConfig from "./config/app.config";
+import databaseConfig from "./config/database.config";
+import { getRedisConnectionOptions } from "./config/redis.config";
+
+import { AnalyticsModule } from "./analytics/analytics.module";
+import { CommonModule } from "./common/common.module";
+import { ComplianceModule } from "./compliance/compliance.module";
+import { DashboardModule } from "./dashboard/dashboard.module";
+import { DebtSimplificationModule } from "./debt-simplification/debt-simplification.module";
+import { DisputesModule } from "./disputes/disputes.module";
+import { EmailModule } from "./email/email.module";
+import { ExportModule } from "./export/export.module";
+import { FriendshipModule } from "./friendship/friendship.module";
+import { GatewayModule } from "./gateway/gateway.module";
+import { GovernanceModule } from "./governance/governance.module";
+import { InvitationsModule } from "./invitations/invitations.module";
+import { MentionsModule } from "./mentions/mentions.module";
+import { ActivitiesModule } from "./modules/activities/activities.module";
+import { ArchivingModule } from "./modules/archiving/archiving.module";
+import { CurrencyModule } from "./modules/currency/currency.module";
+import { HealthModule } from "./modules/health/health.module";
+import { ItemsModule } from "./modules/items/items.module";
+import { SchedulerModule } from "./modules/scheduler/scheduler.module";
+import { SplitsModule } from "./modules/splits/splits.module";
+import { PaymentsModule } from "./payments/payments.module";
+import { ProfileModule } from "./profile/profile.module";
+import { PushNotificationsModule } from "./push-notifications/push-notifications.module";
+import { ReceiptsModule } from "./receipts/receipts.module";
+import { RecurringSplitsModule } from "./recurring-splits/recurring-splits.module";
+import { SearchModule } from "./search/search.module";
+import { SettlementModule } from "./settlement/settlement.module";
+import { SplitCommentsModule } from "./split-comments/split-comments.module";
+import { SplitHistoryModule } from "./split-history/split-history.module";
+import { StellarModule } from "./stellar/stellar.module";
+import { TemplatesModule } from "./templates/templates.module";
+import { UploadModule } from "./uploads/upload.module";
+import { WebhooksModule } from "./webhooks/webhooks.module";
+// Duplicate imports removed; already imported above.
 // Load environment variables
 dotenv.config({
   path: path.resolve(__dirname, "../.env"),
@@ -27,11 +53,17 @@ dotenv.config({
 
 @Module({
   imports: [
+    // ✅ Config
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [".env", ".env.local"],
       load: [appConfig, databaseConfig],
     }),
+
+    // ✅ Event system (mentions, activity feed, etc.)
+    EventEmitterModule.forRoot(),
+
+    // ✅ Database
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
@@ -49,15 +81,16 @@ dotenv.config({
         };
       },
     }),
+
+    // ✅ Queue / background jobs
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        redis: {
-          host: configService.get("REDIS_HOST", "localhost"),
-          port: configService.get("REDIS_PORT", 6379),
-        },
+        redis: getRedisConnectionOptions(configService),
       }),
     }),
+
+    // ✅ Feature modules
     HealthModule,
     StellarModule,
     PaymentsModule,
@@ -70,6 +103,30 @@ dotenv.config({
     SplitHistoryModule,
     ActivitiesModule,
     SearchModule,
+    FriendshipModule,
+    InvitationsModule,
+    MentionsModule,
+    SplitCommentsModule,
+    // Analytics module for user spending & reports
+    AnalyticsModule,
+    ExportModule,
+    // Webhooks module for external event notifications
+    WebhooksModule,
+    // Dispute resolution system for split conflicts
+    DisputesModule,
+    // DAO Governance system for platform decisions
+    GovernanceModule,
+    // Compliance module for tax reporting and exports
+    ComplianceModule,
+    SettlementModule,
+    TemplatesModule,
+    PushNotificationsModule,
+    ArchivingModule,
+    GatewayModule,
+    SchedulerModule,
+    UploadModule,
+    ProfileModule,
+    // Duplicated modules were already included earlier.
   ],
 })
-export class AppModule { }
+export class AppModule {}

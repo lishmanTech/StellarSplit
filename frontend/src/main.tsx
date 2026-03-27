@@ -1,10 +1,13 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./index.css";
 import HomePage from "./pages/Home";
 import RootLayout from "./layouts/RootLayout";
 import { WalletProvider } from "./hooks/use-wallet";
+import { ThemeProvider } from "./components/ThemeContex";
+import { CollaborationProvider } from "./components/Collaboration";
+import "./i18n/config";
 
 const router = createBrowserRouter([
   {
@@ -19,14 +22,68 @@ const router = createBrowserRouter([
           return { Component: Dashboard };
         },
       },
+      {
+        path: "/split/:id",
+        lazy: async () => {
+          const { SplitDetailPage } = await import("./pages/SplitView/SplitDetailPage");
+          return { Component: SplitDetailPage };
+        },
+      },
+      {
+        path: "/analytics",
+        lazy: async () => {
+          const { default: AnalyticsDashboard } = await import("./pages/AnalyticsDashboard");
+          return { Component: AnalyticsDashboard };
+        },
+      },
+      {
+        path: "/split-groups",
+        lazy: async () => {
+          const { default: SplitGroup } = await import("./pages/SplitGroup");
+          return { Component: SplitGroup };
+        },
+      },
+      {
+        path: "/history",
+        lazy: async () => {
+          const { default: SplitHistoryPage } = await import("./pages/SplitHistoryPage");
+          return { Component: SplitHistoryPage };
+        },
+      },
+
+      {
+        path: "/pay",
+        lazy: async () => {
+          const { default: PaymentURIPage } = await import("./pages/PaymentURIPage");
+          return { Component: PaymentURIPage };
+        },
+      },
+      {
+        path: "/create-split",
+        lazy: async () => {
+          const { SplitCreationWizard } = await import("./components/SplitWizard");
+          return { Component: SplitCreationWizard };
+        },
+      },
+      {
+        path: "/notifications",
+        lazy: async () => {
+          const { default: NotificationCenterPage } = await import("./pages/NotificationCenterPage");
+          return { Component: NotificationCenterPage };
+        },
+      },
     ],
   },
 ]);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <WalletProvider>
-      <RouterProvider router={router} />
-    </WalletProvider>
-  </StrictMode>
+    <ThemeProvider>
+      <WalletProvider>
+        <CollaborationProvider>
+          <RouterProvider router={router} />
+        </CollaborationProvider>
+      </WalletProvider>
+    </ThemeProvider>
+  </StrictMode>,
 );

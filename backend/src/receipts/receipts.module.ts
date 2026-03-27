@@ -1,9 +1,15 @@
-import { Module } from '@nestjs/common';
-import { ReceiptsController } from './receipts.controller';
-import { OcrModule } from '../ocr/ocr.module';
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { OcrModule } from "../ocr/ocr.module";
+import { Receipt } from "./entities/receipt.entity";
+import { ReceiptsController } from "./receipts.controller";
+import { ReceiptsService } from "./receipts.service";
+import { StorageProviderService } from "./storage-provider.service";
+import { ThumbnailService } from "./thumbnail.service";
 
 @Module({
-  imports: [OcrModule],
+  imports: [TypeOrmModule.forFeature([Receipt]), OcrModule],
   controllers: [ReceiptsController],
+  providers: [ReceiptsService, StorageProviderService, ThumbnailService],
 })
 export class ReceiptsModule {}

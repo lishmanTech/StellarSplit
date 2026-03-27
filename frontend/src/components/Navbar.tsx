@@ -1,25 +1,153 @@
-import { NavLink } from "react-router";
-import { ROUTES } from "../constants/routes";
+import { ThemeToggle } from "./ThemeToggle";
 import { WalletButton } from "./wallet-button";
 
-export default function Navbar() {
+interface NavbarProps {
+  onMenuOpen?: () => void;
+}
+
+export default function Navbar({ onMenuOpen }: NavbarProps) {
   return (
-    <nav className="flex justify-between items-center w-full mb-10">
-      <div className="flex gap-4">
-        {ROUTES.map((route) => (
-          <NavLink
-            to={route.to}
-            className={({ isActive }) => (isActive ? " text-gray-600" : "")}
-            key={route.label}
+    <header
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 30,
+        width: "100%",
+        backgroundColor:
+          "color-mix(in srgb, var(--color-surface) 85%, transparent)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        borderBottom: "1px solid var(--color-border)",
+      }}
+    >
+      {/* Accent top line */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "2px",
+          background:
+            "linear-gradient(90deg, transparent, var(--color-accent), transparent)",
+          opacity: 0.6,
+        }}
+      />
+
+      <div
+        style={{
+          padding: "0 1.25rem",
+          height: "3.5rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        {/* ── Left: hamburger (mobile only) + brand ── */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          {/* Hamburger — hidden on lg+ since sidebar is always visible there */}
+          <button
+            onClick={() => onMenuOpen?.()}
+            className="lg:hidden"
+            aria-label="Open navigation menu"
+            style={{
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--color-text-muted)",
+              padding: "0.35rem",
+              borderRadius: "0.375rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "color 0.15s, background-color 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "var(--color-text)";
+              e.currentTarget.style.backgroundColor =
+                "color-mix(in srgb, var(--color-accent) 10%, transparent)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "var(--color-text-muted)";
+              e.currentTarget.style.backgroundColor = "transparent";
+            }}
           >
-            {route.label}
-          </NavLink>
-        ))}
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path
+                d="M4 6h16M4 12h16M4 18h16"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+
+          {/* Brand — shown on mobile (sidebar is hidden), hidden on desktop */}
+          <div
+            className="lg:hidden"
+            style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <polygon
+                points="12,2 22,20 2,20"
+                stroke="var(--color-accent)"
+                strokeWidth="2"
+                fill="color-mix(in srgb, var(--color-accent) 15%, transparent)"
+              />
+            </svg>
+            <span
+              style={{
+                fontWeight: 700,
+                fontSize: "0.95rem",
+                color: "var(--color-accent)",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              StellarSplit
+            </span>
+          </div>
+        </div>
+
+        {/* ── Right: ThemeToggle + divider + WalletButton ── */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <ThemeToggle />
+
+          <div
+            style={{
+              width: "1px",
+              height: "1.4rem",
+              backgroundColor: "var(--color-border)",
+            }}
+          />
+
+          <WalletButton
+            style={{
+              background:
+                "linear-gradient(135deg, var(--color-accent), color-mix(in srgb, var(--color-accent) 70%, #a78bfa))",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "0.5rem",
+              padding: "0.45rem 1rem",
+              fontWeight: 600,
+              fontSize: "0.875rem",
+              cursor: "pointer",
+              boxShadow:
+                "0 0 12px color-mix(in srgb, var(--color-accent) 25%, transparent)",
+              transition: "opacity 0.2s, box-shadow 0.2s",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <span className="hidden sm:inline">Connect Wallet</span>
+            <span className="sm:hidden">Connect</span>
+          </WalletButton>
+        </div>
       </div>
-      <NavLink to="/">GitHub</NavLink>
-      <div className="flex gap-1">
-        <WalletButton>Connect Wallet</WalletButton>
-      </div>
-    </nav>
+    </header>
   );
 }

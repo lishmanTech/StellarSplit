@@ -1,0 +1,17 @@
+[package]
+name = "achievement-badges"
+version = "0.1.0"
+edition = "2021"
+authors = ["StellarSplit Team"]
+description = "Soroban NFT contract for achievement badges on Stellar"
+license = "MIT"
+repository = "https://github.com/OlufunbiIK/StellarSplit"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }

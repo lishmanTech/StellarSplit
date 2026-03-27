@@ -88,8 +88,8 @@ export class ReceiptParser {
       const priceMatch = line.match(pricePattern);
       if (!priceMatch) continue;
 
-      const price = this.parsePrice(priceMatch[0]);
-      if (price <= 0) continue;
+      const rawPrice = this.parsePrice(priceMatch[0]);
+      if (rawPrice <= 0) continue;
 
       // Extract quantity
       let quantity = 1;
@@ -97,6 +97,10 @@ export class ReceiptParser {
       if (qtyMatch) {
         quantity = parseInt(qtyMatch[1], 10);
       }
+
+      // If a quantity is present, treat the parsed price as a line total and compute unit price
+      // to normalize returned item.price to a per-unit amount (tests expect unit prices).
+      const price = qtyMatch ? parseFloat((rawPrice / quantity).toFixed(2)) : rawPrice;
 
       // Extract item name (everything before the price, minus quantity)
       let itemName = line.substring(0, priceMatch.index).trim();

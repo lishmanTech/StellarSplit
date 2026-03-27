@@ -1,6 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Split } from './split.entity';
 
+const jsonColumnType = process.env.NODE_ENV === 'test' ? 'simple-json' : 'jsonb';
+const jsonArrayDefault = process.env.NODE_ENV === 'test' ? '[]' : [];
+
 @Entity('items')
 export class Item {
   @PrimaryGeneratedColumn('uuid')
@@ -24,7 +27,7 @@ export class Item {
   @Column({ type: 'varchar', nullable: true })
   category?: string;
 
-  @Column({ type: 'jsonb', default: [] })
+  @Column({ type: jsonColumnType, default: jsonArrayDefault })
   assignedToIds!: string[];
 
   @CreateDateColumn()

@@ -31,6 +31,12 @@ export class SplitHistory {
     })
     role!: SplitRole;
 
+    @Column('text')
+    comment!: string;
+
+    @Column()
+  splitId!: string;
+
   @Column('decimal', { precision: 18, scale: 6 })
     finalAmount!: string; // paid (-) or received (+)
 

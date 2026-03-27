@@ -1,92 +1,80 @@
 import {
   Controller,
+  Delete,
+  Get,
+  Param,
   Post,
-  UseInterceptors,
+  Req,
   UploadedFile,
-  BadRequestException,
-  Logger,
-  HttpCode,
-  HttpStatus,
+  UseGuards,
+  UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import type { Request } from "express";
 import {
-  ApiTags,
-  ApiOperation,
-  ApiConsumes,
-  ApiBody,
-  ApiResponse,
-} from "@nestjs/swagger";
-import { OcrService } from "../ocr/ocr.service";
-import { ScanReceiptResponseDto } from "./dto/scan-receipt-response.dto";
-import { MulterFile } from "@/types/multer";
+  Permissions,
+  RequirePermissions,
+} from "../auth/decorators/permissions.decorator";
+import { AuthorizationGuard } from "../auth/guards/authorization.guard";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { ReceiptsService } from "./receipts.service";
 
-@ApiTags("Receipts")
-@Controller("receipts")
+interface AuthRequest extends Request {
+  user: { walletAddress: string };
+}
+
+@Controller("api/receipts")
+@UseGuards(JwtAuthGuard, AuthorizationGuard)
 export class ReceiptsController {
-  private readonly logger = new Logger(ReceiptsController.name);
+  constructor(private readonly service: ReceiptsService) {}
 
-  constructor(private readonly ocrService: OcrService) {}
+  @Post("upload/:splitId")
+  @UseInterceptors(FileInterceptor("file"))
+  @RequirePermissions(Permissions.CAN_CREATE_RECEIPT)
+  async upload(
+    @Param("splitId") splitId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: AuthRequest,
+  ) {
+    return this.service.uploadWithOcr(splitId, file, req.user.walletAddress);
+  }
 
-  @Post("scan")
-  @HttpCode(HttpStatus.OK)
-  @UseInterceptors(FileInterceptor("image"))
-  @ApiOperation({
-    summary: "Scan receipt image with OCR",
-    description:
-      "Upload a receipt image to extract items, prices, and totals using OCR",
-  })
-  @ApiConsumes("multipart/form-data")
-  @ApiBody({
-    schema: {
-      type: "object",
-      properties: {
-        image: {
-          type: "string",
-          format: "binary",
-          description: "Receipt image file (JPEG, PNG, etc.)",
-        },
-      },
-      required: ["image"],
-    },
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Receipt successfully scanned and parsed",
-    type: ScanReceiptResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: "Invalid image file or OCR processing failed",
-  })
-  async scanReceipt(
-    @UploadedFile() file: MulterFile
-  ): Promise<ScanReceiptResponseDto> {
-    if (!file) {
-      throw new BadRequestException("No image file provided");
-    }
+  @Post("upload-standalone")
+  @UseInterceptors(FileInterceptor("file"))
+  async uploadStandalone(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: AuthRequest,
+  ) {
+    return this.service.uploadStandalone(file, req.user.walletAddress);
+  }
 
-    const allowedMimeTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/webp",
-    ];
-    if (!allowedMimeTypes.includes(file.mimetype)) {
-      throw new BadRequestException(
-        `Invalid file type. Allowed types: ${allowedMimeTypes.join(", ")}`
-      );
-    }
+  @Get("split/:splitId")
+  @RequirePermissions(Permissions.CAN_READ_RECEIPT)
+  async listBySplit(@Param("splitId") splitId: string) {
+    return this.service.listBySplit(splitId);
+  }
 
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      throw new BadRequestException("File size exceeds maximum limit of 10MB");
-    }
+  @Get(":receiptId/signed-url")
+  @RequirePermissions(Permissions.CAN_READ_RECEIPT)
+  async signedUrl(@Param("receiptId") receiptId: string) {
+    return this.service.getSignedUrl(receiptId);
+  }
 
-    this.logger.log(
-      `Processing receipt image: ${file.originalname} (${file.size} bytes)`
-    );
+  @Delete(":receiptId")
+  @RequirePermissions(Permissions.CAN_DELETE_RECEIPT)
+  async delete(@Param("receiptId") receiptId: string) {
+    return this.service.softDelete(receiptId);
+  }
 
-    const result = await this.ocrService.scanReceipt(file.buffer!);
-    return result;
+  @Get(":receiptId/ocr-data")
+  @RequirePermissions(Permissions.CAN_READ_RECEIPT)
+  async ocrData(@Param("receiptId") receiptId: string) {
+    return this.service.getOcrData(receiptId);
+  }
+
+  @Post(":receiptId/reprocess-ocr")
+  @RequirePermissions(Permissions.CAN_READ_RECEIPT)
+  async reprocessOcr(@Param("receiptId") receiptId: string) {
+    return this.service.reprocessOcr(receiptId);
   }
 }

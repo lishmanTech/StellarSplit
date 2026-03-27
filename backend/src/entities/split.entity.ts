@@ -4,10 +4,15 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
   OneToMany,
 } from "typeorm";
 import { Item } from "./item.entity";
 import { Participant } from "./participant.entity";
+import { ManyToOne, JoinColumn } from "typeorm";
+import { ExpenseCategory } from "../compliance/entities/expense-category.entity";
+
+const timestampColumnType = process.env.NODE_ENV === 'test' ? 'datetime' : 'timestamp';
 
 @Entity("splits")
 export class Split {
@@ -22,6 +27,13 @@ export class Split {
 
   @Column({ type: "varchar", default: "active" })
   status!: "active" | "completed" | "partial";
+
+  /**
+   * Whether the split is frozen due to an active dispute
+   * When frozen: no new payments, withdrawals, or distributions allowed
+   */
+  @Column({ type: "boolean", default: false })
+  isFrozen!: boolean;
 
   @Column({ type: "text", nullable: true })
   description?: string;
@@ -39,15 +51,32 @@ export class Split {
   @Column({ type: "varchar", length: 56, nullable: true })
   creatorWalletAddress?: string;
 
+  @Column({ type: timestampColumnType, nullable: true })
+  dueDate?: Date;
+
   @CreateDateColumn()
   createdAt!: Date;
 
   @UpdateDateColumn()
   updatedAt!: Date;
 
+  /** Soft delete: set when removed; records with this set are excluded from default queries. */
+  @DeleteDateColumn({ name: "deleted_at" })
+  deletedAt!: Date | null;
+
   @OneToMany(() => Item, (item) => item.split)
   items?: Item[];
 
   @OneToMany(() => Participant, (participant) => participant.split)
   participants!: Participant[];
+
+  @Column({ type: "uuid", nullable: true })
+  categoryId?: string;
+
+  @Column({ type: timestampColumnType, nullable: true })
+  expiryDate?: Date;
+
+  @ManyToOne(() => ExpenseCategory, (category) => category.splits)
+  @JoinColumn({ name: "categoryId" })
+  category?: ExpenseCategory;
 }
