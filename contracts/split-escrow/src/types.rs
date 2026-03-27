@@ -7,8 +7,6 @@ pub enum SplitStatus {
     Ready,
     Cancelled,
     Released,
-    /// Funds refunded to participants (e.g. dispute upheld).
-    Cancelled,
 }
 
 /// Escrow split state. `participants.len()` is the current distinct participant count.
