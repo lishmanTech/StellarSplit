@@ -24,17 +24,6 @@ fn validate_note_len(note: &String) -> Result<(), Error> {
     Ok(())
 }
 
-fn participant_known(participants: &Vec<Address>, addr: &Address) -> bool {
-    let mut i = 0u32;
-    while i < participants.len() {
-        if participants.get(i).unwrap() == *addr {
-            return true;
-        }
-        i += 1;
-    }
-    false
-}
-
 fn validate_metadata(metadata: &Map<String, String>) -> Result<(), Error> {
     if metadata.len() > MAX_METADATA_ENTRIES {
         return Err(Error::InvalidMetadata);
@@ -108,8 +97,9 @@ impl SplitEscrowContract {
         description: String,
         total_amount: i128,
         metadata: Map<String, String>,
+        obligations: Map<Address, i128>,
         max_participants: Option<u32>,
-        _whitelist_enabled: bool,
+        whitelist_enabled: bool,
         note: Option<String>,
     ) -> Result<u64, Error> {
         if !storage::has_admin(&env) {
@@ -120,9 +110,24 @@ impl SplitEscrowContract {
             return Err(Error::InvalidAmount);
         }
 
+        // Validate that total_amount matches sum of obligations.
+        let mut sum_obligations = 0i128;
+        let keys = obligations.keys();
+        for i in 0..keys.len() {
+            let key = keys.get(i).unwrap();
+            let val = obligations.get(key).unwrap();
+            if val <= 0 {
+                return Err(Error::InvalidAmount);
+            }
+            sum_obligations += val;
+        }
+        if sum_obligations != total_amount {
+            return Err(Error::TotalAmountMismatch);
+        }
+
         let cap = max_participants.unwrap_or(DEFAULT_MAX_PARTICIPANTS);
-        if cap == 0 {
-            return Err(Error::InvalidAmount);
+        if obligations.len() > cap {
+            return Err(Error::ParticipantCapExceeded);
         }
 
         validate_metadata(&metadata)?;
@@ -135,14 +140,17 @@ impl SplitEscrowContract {
             None => String::from_str(&env, ""),
         };
 
-        // This contract currently doesn't accept arbitrary metadata at creation.
-        // Keep the on-chain metadata map empty for now.
         let metadata = Map::new(&env);
 
         // Whitelist functionality is supported via add/remove calls, but default is disabled.
 
         let split_id = storage::get_next_split_id(&env);
         storage::bump_next_split_id(&env);
+
+        let mut participants = Vec::new(&env);
+        for i in 0..keys.len() {
+            participants.push_back(keys.get(i).unwrap());
+        }
 
         let split = Split {
             split_id,
@@ -153,8 +161,9 @@ impl SplitEscrowContract {
             deposited_amount: 0,
             status: SplitStatus::Pending,
             max_participants: cap,
-            participants: Vec::new(&env),
+            participants,
             balances: Map::new(&env),
+            obligations,
             note: note_stored,
         };
         storage::set_split(&env, &split);
@@ -236,13 +245,12 @@ impl SplitEscrowContract {
         if split.status != SplitStatus::Pending {
             return Err(Error::SplitNotPending);
         }
+
+        // Whitelist check if enabled.
         if storage::is_whitelist_enabled(&env, split_id)
             && !storage::is_whitelisted(&env, split_id, &participant)
         {
             return Err(Error::Unauthorized);
-        }
-        if split.deposited_amount + amount > split.total_amount {
-            return Err(Error::InvalidAmount);
         }
 
         if !participant_known(&split.participants, &participant) {
@@ -262,10 +270,16 @@ impl SplitEscrowContract {
         let token_client = token::Client::new(&env, &token_address);
         token_client.transfer(&participant, &env.current_contract_address(), &amount);
 
+        split
+            .balances
+            .set(participant.clone(), current_balance + amount);
         split.deposited_amount += amount;
+
+        // Check if all obligations are met to transition to Ready.
         if split.deposited_amount == split.total_amount {
             split.status = SplitStatus::Ready;
         }
+
         storage::set_split(&env, &split);
         events::emit_deposit(&env, split_id, &participant, amount);
         Ok(())

@@ -18,4 +18,8 @@ pub enum Error {
     InvalidMetadata = 13,
     SplitNotActive = 14,
     InvalidVersion = 15,
+    InvalidMetadata = 15,
+    ParticipantNotOwed = 16,
+    InsufficientFulfillment = 17,
+    TotalAmountMismatch = 18,
 }

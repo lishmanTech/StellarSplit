@@ -43,6 +43,7 @@ fn setup() -> (
     client.initialize(&admin, &token, &String::from_str(&env, "1.0.0"));
 
     token_admin_client.mint(&participant, &1_000_000);
+    token_admin_client.mint(&creator, &1_000_000);
 
     (
         env,
@@ -62,11 +63,15 @@ fn test_fee_deducted_and_sent_to_treasury_on_release() {
     client.set_treasury(&treasury);
     client.set_fee(&250u32); // 2.5%
 
+    let mut obligations = Map::new(&env);
+    obligations.set(participant.clone(), 10_000);
+
     let split_id = client.create_escrow(
         &creator,
         &String::from_str(&env, "Dinner"),
         &10_000,
         &Map::new(&env),
+        &obligations,
         &None,
         &false,
         &None,
@@ -91,6 +96,9 @@ fn test_admin_can_update_fee_and_treasury() {
     client.set_treasury(&treasury_a);
     client.set_fee(&100u32);
 
+    let mut obligations_a = Map::new(&env);
+    obligations_a.set(participant.clone(), 1_000);
+
     let split_a = client.create_escrow(
         &creator,
         &String::from_str(&env, "A"),
@@ -98,7 +106,9 @@ fn test_admin_can_update_fee_and_treasury() {
         &Map::new(&env),
         &None,
         &false,
+        &obligations_a,
         &None,
+        
     );
     client.deposit(&split_a, &participant, &1_000);
     client.release_funds(&split_a);
@@ -107,6 +117,9 @@ fn test_admin_can_update_fee_and_treasury() {
     let treasury_b = Address::generate(&env);
     client.set_treasury(&treasury_b);
     client.set_fee(&300u32);
+
+    let mut obligations_b = Map::new(&env);
+    obligations_b.set(participant.clone(), 2_000);
 
     let split_b = client.create_escrow(
         &creator,
@@ -142,11 +155,15 @@ fn test_fees_collected_event_emitted() {
 
     let before_len = env.events().all().len();
 
+    let mut obligations = Map::new(&env);
+    obligations.set(participant.clone(), 1_000);
+
     let split_id = client.create_escrow(
         &creator,
         &String::from_str(&env, "Event"),
         &1_000,
         &Map::new(&env),
+        &obligations,
         &None,
         &false,
         &None,
@@ -197,6 +214,88 @@ fn test_upgrade_version_non_admin_fails() {
 
 #[test]
 #[should_panic(expected = "HostError: Error(Contract, #15)")] // InvalidVersion
+fn test_partial_deposits() {
+    let (env, client, _admin, creator, participant, token_client, _) = setup();
+    let p2 = Address::generate(&env);
+    let token_admin_client = TokenAdminClient::new(&env, token_client.address);
+    token_admin_client.mint(&p2, &1_000_000);
+
+    let mut obligations = Map::new(&env);
+    obligations.set(participant.clone(), 5_000);
+    obligations.set(p2.clone(), 5_000);
+
+    let split_id = client.create_escrow(
+        &creator,
+        &String::from_str(&env, "Shared Bill"),
+        &10_000,
+        &obligations,
+        &None,
+        &None,
+    );
+
+    // Participant 1 pays half their obligation.
+    client.deposit(&split_id, &participant, &2_500);
+    let escrow = client.get_escrow(&split_id);
+    assert_eq!(escrow.status, SplitStatus::Pending);
+    assert_eq!(escrow.deposited_amount, 2_500);
+    assert_eq!(escrow.balances.get(participant.clone()).unwrap(), 2_500);
+
+    // Participant 1 pays the rest of their obligation.
+    client.deposit(&split_id, &participant, &2_500);
+    let escrow = client.get_escrow(&split_id);
+    assert_eq!(escrow.deposited_amount, 5_000);
+    assert_eq!(escrow.balances.get(participant.clone()).unwrap(), 5_000);
+    assert_eq!(escrow.status, SplitStatus::Pending); // Still pending because p2 hasn't paid.
+
+    // Participant 2 pays their full obligation.
+    client.deposit(&split_id, &p2, &5_000);
+    let escrow = client.get_escrow(&split_id);
+    assert_eq!(escrow.deposited_amount, 10_000);
+    assert_eq!(escrow.status, SplitStatus::Ready);
+
+    client.release_funds(&split_id);
+    assert_eq!(client.get_escrow(&split_id).status, SplitStatus::Released);
+    assert_eq!(token_client.balance(&creator), 10_000);
+}
+
+#[test]
+fn test_cancel_partial_refunds() {
+    let (env, client, _admin, creator, participant, token_client, _) = setup();
+    let p2 = Address::generate(&env);
+    let token_admin_client = TokenAdminClient::new(&env, token_client.address);
+    token_admin_client.mint(&p2, &1_000_000);
+
+    let mut obligations = Map::new(&env);
+    obligations.set(participant.clone(), 5_000);
+    obligations.set(p2.clone(), 5_000);
+
+    let split_id = client.create_escrow(
+        &creator,
+        &String::from_str(&env, "Shared Bill"),
+        &10_000,
+        &obligations,
+        &None,
+        &None,
+    );
+
+    client.deposit(&split_id, &participant, &3_000);
+    client.deposit(&split_id, &p2, &2_000);
+
+    let balance_p1_before = token_client.balance(&participant);
+    let balance_p2_before = token_client.balance(&p2);
+
+    client.cancel_split(&split_id);
+
+    assert_eq!(
+        token_client.balance(&participant),
+        balance_p1_before + 3_000
+    );
+    assert_eq!(token_client.balance(&p2), balance_p2_before + 2_000);
+    assert_eq!(client.get_escrow(&split_id).status, SplitStatus::Cancelled);
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #11)")] // InvalidVersion
 fn test_upgrade_version_invalid_semver_fails() {
     let (env, client, _, _, _, _, _) = setup();
     client.upgrade_version(&String::from_str(&env, "1.0"));
