@@ -49,6 +49,7 @@ import { UploadModule } from "./uploads/upload.module";
 import { ShortLinksModule } from "./short-links/short-links.module";
 import { WebhooksModule } from "./webhooks/webhooks.module";
 import { ReputationModule } from "./reputation/reputation.module";
+import { FraudDetectionModule } from "./fraud-detection/fraud-detection.module";
 // Duplicate imports removed; already imported above.
 // Load environment variables
 dotenv.config({
@@ -135,6 +136,7 @@ dotenv.config({
         CollaborationModule,
         DashboardModule,
         ShortLinksModule,
+        FraudDetectionModule,
         // Duplicated modules were already included earlier.
     ],
 })

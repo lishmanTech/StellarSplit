@@ -1,12 +1,17 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Split } from '../../entities/split.entity';
 import { Item } from '../../entities/item.entity';
 import { Participant } from '../../entities/participant.entity';
 import { Receipt } from '../../receipts/entities/receipt.entity';
 import { OcrService } from '../../ocr/ocr.service';
 import { SplitCalculationService } from './split-calculation.service';
+import { FraudDetectionService } from '../../fraud-detection/fraud-detection.service';
+import { AnalyzeSplitRequestDto } from '../../fraud-detection/dto/analyze-split.dto';
 import { 
   CreateSplitDto, 
   UpdateSplitDto, 
@@ -17,6 +22,8 @@ import {
 
 @Injectable()
 export class SplitsService {
+  private readonly logger = new Logger(SplitsService.name);
+
   constructor(
     @InjectRepository(Split)
     private readonly splitRepository: Repository<Split>,
@@ -30,6 +37,7 @@ export class SplitsService {
     private readonly splitCalculationService: SplitCalculationService,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly fraudDetectionService: FraudDetectionService,
   ) {}
 
   /**
@@ -84,6 +92,31 @@ export class SplitsService {
     }
 
     return createdSplit;
+    // Perform fraud detection check
+    try {
+      const fraudRequest: AnalyzeSplitRequestDto = {
+        split_data: {
+          split_id: savedSplit.id,
+          creator_id: createSplitDto.creatorWalletAddress,
+          total_amount: createSplitDto.totalAmount,
+          participant_count: createSplitDto.participants?.length || 0,
+          description: createSplitDto.description,
+          preferred_currency: createSplitDto.preferredCurrency || 'XLM',
+          creator_wallet_address: createSplitDto.creatorWalletAddress,
+          created_at: savedSplit.createdAt,
+        },
+      };
+      const fraudResult = await this.fraudDetectionService.checkSplit(fraudRequest);
+      if (!fraudResult.allowed) {
+        // Log the block, but still allow the split for now (or throw error)
+        this.logger.warn(`Split ${savedSplit.id} blocked due to fraud risk: ${fraudResult.riskLevel}`);
+      }
+    } catch (error) {
+      // Log but don't fail the split creation
+      this.logger.error(`Fraud detection failed for split ${savedSplit.id}:`, error);
+    }
+
+    return this.getSplitById(savedSplit.id);
   }
 
   /**

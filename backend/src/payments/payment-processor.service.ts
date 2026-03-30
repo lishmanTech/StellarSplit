@@ -21,6 +21,7 @@ import { EmailService } from "../email/email.service";
 import { MultiCurrencyService } from "../multi-currency/multi-currency.service";
 import { EventsGateway } from "../gateway/events.gateway";
 import { AnalyticsService } from "../analytics/analytics.service";
+import { FraudDetectionService, AnalyzePaymentRequestDto } from '../fraud-detection/fraud-detection.service';
 import * as crypto from "crypto";
 import { ReputationService } from "../reputation/reputation.service";
 import { ReputationEventType } from "../reputation/enums/reputation-event-type.enum";
@@ -83,6 +84,7 @@ export class PaymentProcessorService {
     private readonly multiCurrencyService: MultiCurrencyService,
     private readonly dataSource: DataSource,
     @Optional() private readonly analyticsService?: AnalyticsService,
+    @Optional() private readonly fraudDetectionService?: FraudDetectionService,
     @Optional() private readonly customConfig?: Partial<PaymentProcessorConfig>,
     private readonly reputationService: ReputationService,
   ) {
@@ -236,6 +238,37 @@ export class PaymentProcessorService {
           this.logger.warn(
             `Multi-currency processing failed, using direct payment: ${error.message}`,
           );
+        }
+      }
+
+      // Perform fraud detection check
+      if (this.fraudDetectionService) {
+        try {
+          const fraudRequest: AnalyzePaymentRequestDto = {
+            payment_data: {
+              payment_id: key, // use idempotency key as temp id
+              split_id: splitId,
+              participant_id: participantId,
+              amount: receivedAmount,
+              asset: receivedAsset,
+              tx_hash: txHash,
+              sender_address: verificationResult.sender || '',
+              receiver_address: verificationResult.receiver || '',
+              timestamp: new Date(),
+            },
+          };
+          const fraudResult = await this.fraudDetectionService.checkPayment(fraudRequest);
+          if (!fraudResult.allowed) {
+            this.logger.warn(`Payment blocked due to fraud risk: ${fraudResult.riskLevel} for split ${splitId}`);
+            await queryRunner.rollbackTransaction();
+            throw new BadRequestException('Payment blocked due to fraud risk');
+          }
+        } catch (error) {
+          if (error instanceof BadRequestException) {
+            throw error;
+          }
+          // Log but don't fail the payment
+          this.logger.error(`Fraud detection failed for payment in split ${splitId}:`, error);
         }
       }
 
