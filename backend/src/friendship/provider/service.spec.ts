@@ -4,6 +4,10 @@ import { Repository } from 'typeorm';
 
 import { FriendshipService } from '../provider/service';
 import { Friendship } from '../friendship.entity';
+import { describe, beforeEach, it } from 'node:test';
+
+/// <reference types="jest" />
+
 
 describe('FriendshipService', () => {
   let service: FriendshipService;
@@ -15,7 +19,6 @@ describe('FriendshipService', () => {
   const mockRepo = {
     findOne: jest.fn(),
     save: jest.fn(),
-    update: jest.fn(),
     find: jest.fn(),
   };
 
@@ -40,26 +43,80 @@ describe('FriendshipService', () => {
 
   it('should send a friend request', async () => {
     mockRepo.findOne.mockResolvedValue(null);
+    mockRepo.save.mockResolvedValue({
+      id: 'friendship-id',
+      userId: userA,
+      friendId: userB,
+      status: 'pending',
+      requestedByUserId: userA,
+      blockedByUserId: null,
+      createdAt: new Date(),
+    });
 
     await service.sendRequest(userA, userB);
 
     expect(repo.save).toHaveBeenCalledTimes(1);
-    expect(repo.save).toHaveBeenCalledWith([
-      { userId: userA, friendId: userB, status: 'pending' },
-      { userId: userB, friendId: userA, status: 'pending' },
-    ]);
+    expect(repo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: userA,
+        friendId: userB,
+        status: 'pending',
+        requestedByUserId: userA,
+        blockedByUserId: null,
+      }),
+    );
   });
 
-  it('should accept a friend request', async () => {
-    await service.acceptRequest(userA, userB);
+  it('should auto-accept reverse pending request', async () => {
+    mockRepo.findOne.mockResolvedValue({
+      id: 'friendship-id',
+      userId: userA,
+      friendId: userB,
+      status: 'pending',
+      requestedByUserId: userB,
+      blockedByUserId: null,
+      createdAt: new Date(),
+    });
+    mockRepo.save.mockResolvedValue({
+      id: 'friendship-id',
+      userId: userA,
+      friendId: userB,
+      status: 'accepted',
+      requestedByUserId: null,
+      blockedByUserId: null,
+      createdAt: new Date(),
+    });
 
-    expect(repo.update).toHaveBeenCalledTimes(1);
-    expect(repo.update).toHaveBeenCalledWith(
-      [
-        { userId: userA, friendId: userB },
-        { userId: userB, friendId: userA },
-      ],
-      { status: 'accepted' },
+    await service.sendRequest(userA, userB);
+
+    expect(repo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'accepted',
+        requestedByUserId: null,
+        blockedByUserId: null,
+      }),
+    );
+  });
+
+  it('should block friendship deterministically', async () => {
+    mockRepo.findOne.mockResolvedValue({
+      id: 'friendship-id',
+      userId: userA,
+      friendId: userB,
+      status: 'accepted',
+      requestedByUserId: null,
+      blockedByUserId: null,
+      createdAt: new Date(),
+    });
+
+    await service.block(userA, userB);
+
+    expect(repo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'blocked',
+        requestedByUserId: null,
+        blockedByUserId: userA,
+      }),
     );
   });
 });

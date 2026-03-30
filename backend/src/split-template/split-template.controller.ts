@@ -3,6 +3,7 @@ import { Request } from "express";
 import { SplitTemplateService } from "./split-template.service";
 import { CreateSplitTemplateDto } from "./dto/create-split-template.dto";
 import { CreateSplitFromTemplateDto } from "./dto/create-split-from-template.dto";
+import { Split } from "../entities/split.entity";
 
 interface RequestWithUser extends Request {
     user: { wallet: string };
@@ -26,7 +27,7 @@ export class SplitTemplateController {
     createSplit(
         @Param("id") id: string,
         @Body() dto?: CreateSplitFromTemplateDto,
-    ) {
+    ): Promise<Split> {
         return this.service.createSplitFromTemplate(id, dto);
     }
 }

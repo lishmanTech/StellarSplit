@@ -20,8 +20,10 @@ import { Split } from "../entities/split.entity";
 import { EmailService } from "../email/email.service";
 import { MultiCurrencyService } from "../multi-currency/multi-currency.service";
 import { EventsGateway } from "../gateway/events.gateway";
-import { AnalyticsService } from "@/analytics/analytics.service";
+import { AnalyticsService } from "../analytics/analytics.service";
 import * as crypto from "crypto";
+import { ReputationService } from "../reputation/reputation.service";
+import { ReputationEventType } from "../reputation/enums/reputation-event-type.enum";
 
 /**
  * Result of processing a payment submission
@@ -82,6 +84,7 @@ export class PaymentProcessorService {
     private readonly dataSource: DataSource,
     @Optional() private readonly analyticsService?: AnalyticsService,
     @Optional() private readonly customConfig?: Partial<PaymentProcessorConfig>,
+    private readonly reputationService: ReputationService,
   ) {
     this.config = { ...DEFAULT_CONFIG, ...customConfig };
   }
@@ -251,6 +254,9 @@ export class PaymentProcessorService {
         settlementStatus = PaymentSettlementStatus.CONFIRMED;
       }
 
+      // One timestamp drives both persistence and reputation timing.
+      const processedAt = new Date();
+
       // Create payment record with idempotency key
       const payment = queryRunner.manager.create(Payment, {
         idempotencyKey: key,
@@ -265,13 +271,14 @@ export class PaymentProcessorService {
         reconciliationAttempts: 0,
         maxReconciliationAttempts: this.config.maxReconciliationAttempts,
         notificationsSent: false,
-        processedAt: new Date(),
+        processedAt,
         externalReference,
       });
 
       const savedPayment = await queryRunner.manager.save(Payment, payment);
 
       // Update participant's paid amount and status
+      const wasFullyPaidBefore = Number(participant.amountPaid) >= Number(participant.amountOwed) || participant.status === "paid";
       const newAmountPaid = participant.amountPaid + receivedAmount;
       let participantStatus: "pending" | "paid" | "partial" = "partial";
 
@@ -288,6 +295,26 @@ export class PaymentProcessorService {
 
       // Update split's total paid amount
       await this.updateSplitAmountPaidTransactional(queryRunner, splitId);
+
+      // Record reputation only when transitioning to fully paid (to avoid double counting).
+      if (participantStatus === "paid" && !wasFullyPaidBefore) {
+        const deadline =
+          (split as any).dueDate ??
+          (split as any).expiryDate ??
+          new Date((split as any).createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+        const eventType =
+          processedAt.getTime() <= deadline.getTime()
+            ? ReputationEventType.PAID_ON_TIME
+            : ReputationEventType.PAID_LATE;
+
+        await this.reputationService.recordEvent(
+          participant.userId,
+          splitId,
+          eventType,
+          queryRunner.manager,
+        );
+      }
 
       // Commit the transaction
       await queryRunner.commitTransaction();

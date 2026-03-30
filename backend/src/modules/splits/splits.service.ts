@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { Split } from '../../entities/split.entity';
 import { Item } from '../../entities/item.entity';
 import { Participant } from '../../entities/participant.entity';
@@ -28,13 +28,29 @@ export class SplitsService {
     private readonly receiptRepository: Repository<Receipt>,
     private readonly ocrService: OcrService,
     private readonly splitCalculationService: SplitCalculationService,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
   /**
    * Create a new split from scratch
    */
-  async createSplit(createSplitDto: CreateSplitDto): Promise<Split> {
-    const split = this.splitRepository.create({
+  async createSplit(
+    createSplitDto: CreateSplitDto,
+    manager?: EntityManager,
+  ): Promise<Split> {
+    // If no transaction manager is provided, run everything atomically.
+    if (!manager) {
+      return this.dataSource.transaction(async (txManager) => {
+        return this.createSplit(createSplitDto, txManager);
+      });
+    }
+
+    const splitRepository = manager.getRepository(Split);
+    const itemRepository = manager.getRepository(Item);
+    const participantRepository = manager.getRepository(Participant);
+
+    const split = splitRepository.create({
       totalAmount: createSplitDto.totalAmount,
       description: createSplitDto.description,
       creatorWalletAddress: createSplitDto.creatorWalletAddress,
@@ -42,19 +58,32 @@ export class SplitsService {
       dueDate: createSplitDto.dueDate,
     });
 
-    const savedSplit = await this.splitRepository.save(split);
+    const savedSplit = await splitRepository.save(split);
 
     // Create participants
     if (createSplitDto.participants) {
-      await this.createParticipants(savedSplit.id, createSplitDto.participants);
+      await this.createParticipants(
+        savedSplit.id,
+        createSplitDto.participants,
+        participantRepository,
+      );
     }
 
     // Create items if provided
     if (createSplitDto.items) {
-      await this.createItems(savedSplit.id, createSplitDto.items);
+      await this.createItems(savedSplit.id, createSplitDto.items, itemRepository);
     }
 
-    return this.getSplitById(savedSplit.id);
+    const createdSplit = await splitRepository.findOne({
+      where: { id: savedSplit.id },
+      relations: ['items', 'participants', 'category'],
+    });
+
+    if (!createdSplit) {
+      throw new NotFoundException(`Split ${savedSplit.id} not found`);
+    }
+
+    return createdSplit;
   }
 
   /**
@@ -216,9 +245,13 @@ export class SplitsService {
   /**
    * Helper method to create participants
    */
-  private async createParticipants(splitId: string, participants: any[]): Promise<void> {
+  private async createParticipants(
+    splitId: string,
+    participants: any[],
+    participantRepo: Repository<Participant> = this.participantRepository,
+  ): Promise<void> {
     const participantEntities = participants.map(p => 
-      this.participantRepository.create({
+      participantRepo.create({
         splitId,
         userId: p.userId,
         amountOwed: p.amountOwed || 0,
@@ -226,15 +259,19 @@ export class SplitsService {
       })
     );
 
-    await this.participantRepository.save(participantEntities);
+    await participantRepo.save(participantEntities);
   }
 
   /**
    * Helper method to create items
    */
-  private async createItems(splitId: string, items: any[]): Promise<void> {
+  private async createItems(
+    splitId: string,
+    items: any[],
+    itemRepo: Repository<Item> = this.itemRepository,
+  ): Promise<void> {
     const itemEntities = items.map(item => 
-      this.itemRepository.create({
+      itemRepo.create({
         splitId,
         name: item.name,
         quantity: item.quantity,
@@ -245,6 +282,6 @@ export class SplitsService {
       })
     );
 
-    await this.itemRepository.save(itemEntities);
+    await itemRepo.save(itemEntities);
   }
 }

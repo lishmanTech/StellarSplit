@@ -20,6 +20,7 @@ import { AnalyticsModule } from "../analytics/analytics.module";
 import { GatewayModule } from "../gateway/gateway.module";
 import { IdempotencyService } from "../common/idempotency/idempotency.service";
 import { IdempotencyInterceptor } from "../common/idempotency/idempotency.interceptor";
+import { ReputationModule } from "../reputation/reputation.module";
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { IdempotencyInterceptor } from "../common/idempotency/idempotency.interc
     MultiCurrencyModule,
     AnalyticsModule,
     GatewayModule,
+    ReputationModule,
   ],
   controllers: [PaymentsController],
   providers: [

@@ -1,16 +1,19 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { DataSource, Repository } from "typeorm";
 import { SplitTemplateService } from "./split-template.service";
 import { SplitTemplate } from "./entities/split-template.entity";
 import { CreateSplitTemplateDto } from "./dto/create-split-template.dto";
 import { CreateSplitFromTemplateDto } from "./dto/create-split-from-template.dto";
 import { SplitType } from "./entities/split-template.entity";
 import { NotFoundException } from "@nestjs/common";
+import { SplitsService } from "../modules/splits/splits.service";
 
 describe("SplitTemplateService", () => {
     let service: SplitTemplateService;
     let repository: Repository<SplitTemplate>;
+    let splitsService: jest.Mocked<SplitsService>;
+    let mockDataSource: jest.Mocked<DataSource>;
 
     const mockTemplate: SplitTemplate = {
         id: "test-id",
@@ -18,7 +21,7 @@ describe("SplitTemplateService", () => {
         name: "Test Template",
         description: "Test Description",
         splitType: SplitType.EQUAL,
-        defaultParticipants: [{ name: "John", share: 50 }],
+        defaultParticipants: [{ name: "John", walletAddress: "wallet-1", share: 50 }],
         defaultItems: [{ name: "Item 1", price: 10 }],
         taxPercentage: 10,
         tipPercentage: 15,
@@ -36,13 +39,37 @@ describe("SplitTemplateService", () => {
         increment: jest.fn(),
     };
 
+    const mockSplit = { id: "split-1" } as any;
+
     beforeEach(async () => {
+        const mockManager = {
+            getRepository: jest.fn().mockReturnValue(mockRepository),
+        };
+
+        mockDataSource = {
+            transaction: jest.fn(async (cb) => cb(mockManager)),
+        } as any;
+
+        splitsService = {
+            createSplit: jest.fn(),
+        } as any;
+
+        (splitsService.createSplit as jest.Mock).mockResolvedValue(mockSplit);
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 SplitTemplateService,
                 {
                     provide: getRepositoryToken(SplitTemplate),
                     useValue: mockRepository,
+                },
+                {
+                    provide: SplitsService,
+                    useValue: splitsService,
+                },
+                {
+                    provide: DataSource,
+                    useValue: mockDataSource,
                 },
             ],
         }).compile();
@@ -160,19 +187,42 @@ describe("SplitTemplateService", () => {
                 "usageCount",
                 1,
             );
-            expect(result).toEqual({
-                splitType: mockTemplate.splitType,
-                participants: mockTemplate.defaultParticipants,
-                items: mockTemplate.defaultItems,
-                taxPercentage: mockTemplate.taxPercentage,
-                tipPercentage: mockTemplate.tipPercentage,
-            });
+
+            const expectedTotalAmount = 10 + 10 * (10 / 100) + 10 * (15 / 100); // 12.5
+            expect(splitsService.createSplit).toHaveBeenCalledWith(
+                {
+                    totalAmount: expectedTotalAmount,
+                    description: mockTemplate.description,
+                    creatorWalletAddress: mockTemplate.userId,
+                    participants: [
+                        {
+                            userId: "wallet-1",
+                            walletAddress: "wallet-1",
+                            amountOwed: expectedTotalAmount,
+                        },
+                    ],
+                    items: [
+                        {
+                            name: "Item 1",
+                            quantity: 1,
+                            unitPrice: 10,
+                            totalPrice: 10,
+                            category: undefined,
+                            assignedToIds: [],
+                        },
+                    ],
+                },
+                expect.anything(),
+            );
+            expect(result).toEqual(mockSplit);
         });
 
         it("should apply overrides when provided", async () => {
             const templateId = "test-id";
             const overrideDto: CreateSplitFromTemplateDto = {
-                participantOverrides: [{ name: "Jane", share: 75 }],
+                participantOverrides: [
+                    { name: "Jane", walletAddress: "wallet-2", share: 75 },
+                ],
                 itemOverrides: [{ name: "Item 2", price: 20 }],
             };
 
@@ -184,13 +234,37 @@ describe("SplitTemplateService", () => {
                 overrideDto,
             );
 
-            expect(result).toEqual({
-                splitType: mockTemplate.splitType,
-                participants: overrideDto.participantOverrides,
-                items: overrideDto.itemOverrides,
-                taxPercentage: mockTemplate.taxPercentage,
-                tipPercentage: mockTemplate.tipPercentage,
-            });
+            const expectedSubtotal = 20;
+            const expectedTotalAmount = expectedSubtotal +
+                expectedSubtotal * (10 / 100) +
+                expectedSubtotal * (15 / 100); // 25
+
+            expect(splitsService.createSplit).toHaveBeenCalledWith(
+                {
+                    totalAmount: expectedTotalAmount,
+                    description: mockTemplate.description,
+                    creatorWalletAddress: mockTemplate.userId,
+                    participants: [
+                        {
+                            userId: "wallet-2",
+                            walletAddress: "wallet-2",
+                            amountOwed: expectedTotalAmount,
+                        },
+                    ],
+                    items: [
+                        {
+                            name: "Item 2",
+                            quantity: 1,
+                            unitPrice: 20,
+                            totalPrice: 20,
+                            category: undefined,
+                            assignedToIds: [],
+                        },
+                    ],
+                },
+                expect.anything(),
+            );
+            expect(result).toEqual(mockSplit);
         });
 
         it("should throw NotFoundException when template not found", async () => {

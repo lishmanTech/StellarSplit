@@ -48,6 +48,7 @@ import { TemplatesModule } from "./templates/templates.module";
 import { UploadModule } from "./uploads/upload.module";
 import { ShortLinksModule } from "./short-links/short-links.module";
 import { WebhooksModule } from "./webhooks/webhooks.module";
+import { ReputationModule } from "./reputation/reputation.module";
 // Duplicate imports removed; already imported above.
 // Load environment variables
 dotenv.config({
@@ -117,6 +118,7 @@ dotenv.config({
         WebhooksModule,
         // Dispute resolution system for split conflicts
         DisputesModule,
+        ReputationModule,
         // DAO Governance system for platform decisions
         GovernanceModule,
         // Compliance module for tax reporting and exports
