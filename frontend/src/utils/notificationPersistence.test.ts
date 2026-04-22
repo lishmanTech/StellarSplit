@@ -23,7 +23,7 @@ describe("notificationPersistence", () => {
     ];
     const incoming: Notification[] = [
       { id: "1", type: "payment_received", title: "Test Updated", message: "Msg Updated", read: false, createdAt: "2024-01-01T00:00:00.000Z" },
-      { id: "2", type: "split_created", title: "New", message: "New Msg", read: false, createdAt: "2024-01-02T00:00:00.000Z" }
+      { id: "2", type: "split_completed", title: "New", message: "New Msg", read: false, createdAt: "2024-01-02T00:00:00.000Z" }
     ];
 
     const merged = notificationPersistence.merge(local, incoming);

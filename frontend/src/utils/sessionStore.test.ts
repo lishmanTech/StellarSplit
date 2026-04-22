@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { sessionStore, SessionKey } from "./sessionStore";
+import { sessionStore } from "./sessionStore";
 
 describe("sessionStore", () => {
   beforeEach(() => {
