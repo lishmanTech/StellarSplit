@@ -1,4 +1,4 @@
-import { Process, Processor } from "@nestjs/bull";
+import { Process, Processor, OnQueueFailed } from "@nestjs/bull";
 import { Logger } from "@nestjs/common";
 import { Job } from "bull";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -7,6 +7,7 @@ import { Repository, LessThanOrEqual } from "typeorm";
 import { BatchJob, BatchJobType, BatchJobStatus } from "../entities/batch-job.entity";
 import { BatchOperation, BatchOperationStatus } from "../entities/batch-operation.entity";
 import { BatchProgressService } from "../batch-progress.service";
+import { logJobFailure } from "../../common/queue-job-policy";
 
 interface ScheduledJobData {
   batchId: string;
@@ -49,7 +50,7 @@ export class ScheduledBatchProcessor {
 
       this.logger.log(`Completed daily reconciliation for batch ${batchId}`);
     } catch (error: any) {
-      this.logger.error(`Daily reconciliation failed: ${error.message}`);
+      logJobFailure(this.logger, job, error, { context: 'daily-reconciliation' });
       throw error;
     }
   }
@@ -82,7 +83,7 @@ export class ScheduledBatchProcessor {
 
       this.logger.log(`Completed weekly summary for batch ${batchId}`);
     } catch (error: any) {
-      this.logger.error(`Weekly summary failed: ${error.message}`);
+      logJobFailure(this.logger, job, error, { context: 'weekly-summary' });
       throw error;
     }
   }
@@ -118,7 +119,7 @@ export class ScheduledBatchProcessor {
 
       this.logger.log(`Completed monthly analytics for batch ${batchId}`);
     } catch (error: any) {
-      this.logger.error(`Monthly analytics failed: ${error.message}`);
+      logJobFailure(this.logger, job, error, { context: 'monthly-analytics' });
       throw error;
     }
   }
@@ -161,7 +162,7 @@ export class ScheduledBatchProcessor {
         cutoffDate: cutoffDate.toISOString(),
       }));
     } catch (error: any) {
-      this.logger.error(`Cleanup failed: ${error.message}`);
+      logJobFailure(this.logger, job, error, { context: 'cleanup-old-batches' });
       throw error;
     }
   }
@@ -245,5 +246,26 @@ export class ScheduledBatchProcessor {
     this.logger.log(`Scheduled ${taskType} job with cron: ${cronExpression}`);
 
     return savedBatch.id;
+  }
+
+  /**
+   * Dead-letter handler: fires when any scheduled batch job has exhausted all retries.
+   */
+  @OnQueueFailed()
+  async onFailed(job: Job<ScheduledJobData>, err: Error) {
+    logJobFailure(this.logger, job, err, { context: 'scheduled-batch-dead-letter' });
+
+    const { batchId } = job.data;
+    if (batchId) {
+      try {
+        await this.batchJobRepository.update(batchId, {
+          status: BatchJobStatus.FAILED,
+          error_message: err.message,
+          completed_at: new Date(),
+        });
+      } catch {
+        // best effort
+      }
+    }
   }
 }

@@ -3,6 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -10,10 +11,13 @@ import { SplitShortLink } from './entities/split-short-link.entity';
 import { LinkAccessLog } from './entities/link-access-log.entity';
 import { GenerateLinkDto } from './dto/generate-link.dto';
 import { AuthorizationService } from '../auth/services/authorization.service';
+import { ShortLinkUrlBuilder } from './short-link-url.builder';
 import * as crypto from 'crypto';
 
 @Injectable()
 export class ShortLinksService {
+  private readonly logger = new Logger(ShortLinksService.name);
+
   constructor(
     @InjectRepository(SplitShortLink)
     private shortLinkRepo: Repository<SplitShortLink>,
@@ -22,6 +26,7 @@ export class ShortLinksService {
     private accessLogRepo: Repository<LinkAccessLog>,
 
     private readonly authorizationService: AuthorizationService,
+    private readonly urlBuilder: ShortLinkUrlBuilder,
   ) {}
 
   // Generate 6-char unique short code
@@ -86,12 +91,10 @@ export class ShortLinksService {
 
     await this.shortLinkRepo.save(link);
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-
     return {
       shortCode,
-      url: `${frontendUrl}/l/${shortCode}`,
-      sep0007: this.buildSep0007Uri(dto.splitId),
+      url: this.urlBuilder.buildShortLinkUrl(shortCode),
+      sep0007: this.urlBuilder.buildSep0007Uri(dto.splitId),
       expiresAt: expiry,
     };
   }
@@ -128,7 +131,7 @@ export class ShortLinksService {
     });
 
     return {
-      redirectUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/splits/${link.split.id}`,
+      redirectUrl: this.urlBuilder.buildSplitUrl(link.split.id),
       linkType: link.linkType,
     };
   }
@@ -185,7 +188,16 @@ export class ShortLinksService {
     await this.shortLinkRepo.delete({ shortCode });
   }
 
-  private buildSep0007Uri(splitId: string): string {
-    return `web+stellar:pay?memo=${encodeURIComponent(`split:${splitId}`)}`;
+  /**
+   * Validate that a user has access to generate NFC payloads for a split
+   * @param userId - User's wallet address
+   * @param splitId - Split identifier
+   * @throws ForbiddenException if user is not a member of the split
+   */
+  async validateNfcAccess(userId: string, splitId: string): Promise<void> {
+    const canGenerate = await this.authorizationService.canGenerateShortLink(userId, splitId);
+    if (!canGenerate) {
+      throw new ForbiddenException('You are not a member of this split');
+    }
   }
 }

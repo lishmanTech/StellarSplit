@@ -45,7 +45,25 @@ export class AuditService {
     reason?: string;
     severity?: AuditSeverity;
     metadata?: Record<string, unknown>;
+    deduplicationKey?: string;
   }): Promise<AuditEvent> {
+    if (params.deduplicationKey) {
+      const existing = await this.auditRepository.findOne({
+        where: {
+          action: params.action,
+          resourceType: params.resourceType,
+          resourceId: params.resourceId,
+          metadata: { deduplicationKey: params.deduplicationKey },
+        },
+      });
+
+      if (existing) {
+        this.logger.debug(
+          `Duplicate audit event suppressed: ${params.action} (${params.deduplicationKey})`,
+        );
+        return existing;
+      }
+    }
     const event = this.auditRepository.create({
       id: uuidv4(),
       ...params,
@@ -98,11 +116,14 @@ export class AuditService {
     description?: string;
     reason?: string;
     severity?: AuditSeverity;
+    deduplicationKey?: string;
   }): Promise<AuditEvent> {
     return this.logEvent({
       ...params,
       resourceId: params.disputeId,
       resourceType: AuditResourceType.DISPUTE,
+      metadata: params.metadata,
+      deduplicationKey: params.deduplicationKey,
     });
   }
 

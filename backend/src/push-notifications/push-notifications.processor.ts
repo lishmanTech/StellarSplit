@@ -1,4 +1,4 @@
-import { Process, Processor } from '@nestjs/bull';
+import { Process, Processor, OnQueueFailed } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import * as firebaseAdmin from 'firebase-admin';
 import { DeviceRegistration } from './entities/device-registration.entity';
 import { NotificationEventType } from './entities/notification-preference.entity';
+import { logJobFailure } from '../common/queue-job-policy';
 
 @Processor('push_queue')
 export class PushNotificationProcessor {
@@ -111,9 +112,17 @@ export class PushNotificationProcessor {
       
       this.logger.log(`Sent push notification to ${response.successCount}/${tokens.length} devices for user ${userId}`);
     } catch (error) {
-        this.logger.error('Error sending multicast message', error);
+        logJobFailure(this.logger, job, error, { context: 'push-notification' });
         throw error; // Let Bull retry
     }
+  }
+
+  /**
+   * Dead-letter handler: fires when the push notification job has exhausted all retries.
+   */
+  @OnQueueFailed()
+  onFailed(job: Job, err: Error) {
+    logJobFailure(this.logger, job, err, { context: 'push-notification-dead-letter' });
   }
 
   private async handleFailedTokens(tokens: string[]) {

@@ -1,4 +1,4 @@
-import { Process, Processor } from "@nestjs/bull";
+import { Process, Processor, OnQueueFailed } from "@nestjs/bull";
 import { Job } from "bull";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, Between } from "typeorm";
@@ -18,6 +18,7 @@ import { EmailService } from "../email/email.service";
 import { Logger } from "@nestjs/common";
 import * as fs from "fs";
 import * as path from "path";
+import { logJobFailure } from "../common/queue-job-policy";
 
 @Processor("compliance-export")
 export class ComplianceProcessor {
@@ -137,8 +138,25 @@ export class ComplianceProcessor {
 
       this.logger.log(`Export ${requestId} completed successfully`);
     } catch (error) {
-      this.logger.error(`Export ${requestId} failed: ${error}`);
+      logJobFailure(this.logger, job, error, { context: 'compliance-export' });
       await this.exportRepo.update(requestId, { status: ExportStatus.FAILED });
+    }
+  }
+
+  /**
+   * Dead-letter handler: fires when the compliance export job has exhausted all retries.
+   */
+  @OnQueueFailed()
+  async onFailed(job: Job<{ requestId: string }>, err: Error) {
+    logJobFailure(this.logger, job, err, { context: 'compliance-export-dead-letter' });
+
+    const { requestId } = job.data;
+    if (requestId) {
+      try {
+        await this.exportRepo.update(requestId, { status: ExportStatus.FAILED });
+      } catch {
+        // best effort – the DB may be the cause of the failure
+      }
     }
   }
 }

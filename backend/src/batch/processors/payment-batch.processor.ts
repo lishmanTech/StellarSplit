@@ -1,4 +1,4 @@
-import { Process, Processor } from "@nestjs/bull";
+import { Process, Processor, OnQueueFailed } from "@nestjs/bull";
 import { Logger } from "@nestjs/common";
 import { Job } from "bull";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -9,6 +9,7 @@ import { BatchOperation, BatchOperationStatus } from "../entities/batch-operatio
 import { BatchProgressService } from "../batch-progress.service";
 import { BatchJobData } from "../batch.service";
 import { PaymentsService } from "../../payments/payments.service";
+import { logJobFailure } from "../../common/queue-job-policy";
 
 interface PaymentPayload {
   splitId: string;
@@ -75,7 +76,7 @@ export class PaymentBatchProcessor {
 
       this.logger.log(`Completed payment batch ${batchId}`);
     } catch (error: any) {
-      this.logger.error(`Failed to process payment batch ${batchId}: ${error.message}`);
+      logJobFailure(this.logger, job, error, { context: 'payment-batch' });
 
       await this.batchJobRepository.update(batchId, {
         status: BatchJobStatus.FAILED,
@@ -84,6 +85,27 @@ export class PaymentBatchProcessor {
       });
 
       throw error;
+    }
+  }
+
+  /**
+   * Dead-letter handler: fires when the payment batch job has exhausted all retries.
+   */
+  @OnQueueFailed()
+  async onFailed(job: Job<BatchJobData>, err: Error) {
+    logJobFailure(this.logger, job, err, { context: 'payment-batch-dead-letter' });
+
+    const { batchId } = job.data;
+    if (batchId) {
+      try {
+        await this.batchJobRepository.update(batchId, {
+          status: BatchJobStatus.FAILED,
+          error_message: err.message,
+          completed_at: new Date(),
+        });
+      } catch {
+        // best effort
+      }
     }
   }
 
