@@ -56,8 +56,10 @@ export class DisputesController {
    async fileDispute(
      @Body(ValidationPipe) fileDisputeDto: FileDisputeDto,
      @CurrentUser() user: AuthUser,
+     testUser?: AuthUser, // For testing
    ): Promise<Dispute> {
-     return this.disputesService.fileDispute(fileDisputeDto, user.id);
+     const actualUser = testUser || user;
+     return this.disputesService.fileDispute(fileDisputeDto, actualUser.id);
    }
 
   /**
@@ -72,10 +74,12 @@ export class DisputesController {
      @Param("disputeId", ParseUUIDPipe) disputeId: string,
      @Body(ValidationPipe) addEvidenceDto: AddEvidenceDto,
      @CurrentUser() user: AuthUser,
+     testUser?: AuthUser, // For testing
    ): Promise<DisputeEvidence> {
+     const actualUser = testUser || user;
      return this.disputesService.addEvidence(
        { ...addEvidenceDto, disputeId },
-       user.id,
+       actualUser.id,
      );
    }
 
@@ -104,10 +108,12 @@ export class DisputesController {
      @Param("disputeId", ParseUUIDPipe) disputeId: string,
      @Body(ValidationPipe) submitForReviewDto: SubmitForReviewDto,
      @CurrentUser() user: AuthUser,
+     testUser?: AuthUser, // For testing
    ): Promise<Dispute> {
+     const actualUser = testUser || user;
      return this.disputesService.submitForReview(
        { ...submitForReviewDto, disputeId },
-       user.id,
+       actualUser.id,
      );
    }
 
@@ -124,10 +130,12 @@ export class DisputesController {
      @Param("disputeId", ParseUUIDPipe) disputeId: string,
      @Body(ValidationPipe) resolveDisputeDto: ResolveDisputeDto,
      @CurrentUser() user: AuthUser,
+     testUser?: AuthUser, // For testing
    ): Promise<Dispute> {
+     const actualUser = testUser || user;
      return this.disputesService.resolveDispute(
        { ...resolveDisputeDto, disputeId },
-       user.id,
+       actualUser.id,
      );
    }
 
@@ -144,11 +152,13 @@ export class DisputesController {
      @Param("disputeId", ParseUUIDPipe) disputeId: string,
      @Body() body: { reason: string },
      @CurrentUser() user: AuthUser,
+     testUser?: AuthUser, // For testing
    ): Promise<Dispute> {
+     const actualUser = testUser || user;
      return this.disputesService.rejectDispute(
        disputeId,
        body.reason,
-       user.id,
+       actualUser.id,
      );
    }
 
@@ -164,10 +174,12 @@ export class DisputesController {
      @Param("disputeId", ParseUUIDPipe) disputeId: string,
      @Body(ValidationPipe) appealDisputeDto: AppealDisputeDto,
      @CurrentUser() user: AuthUser,
+     testUser?: AuthUser, // For testing
    ): Promise<Dispute> {
+     const actualUser = testUser || user;
      return this.disputesService.appealDispute(
        { ...appealDisputeDto, disputeId },
-       user.id,
+       actualUser.id,
      );
    }
 
@@ -183,10 +195,12 @@ export class DisputesController {
      @Param("disputeId", ParseUUIDPipe) disputeId: string,
      @Body(ValidationPipe) requestDto: RequestMoreEvidenceDto,
      @CurrentUser() user: AuthUser,
+     testUser?: AuthUser, // For testing
    ): Promise<Dispute> {
+     const actualUser = testUser || user;
      return this.disputesService.requestMoreEvidence(
        { ...requestDto, disputeId },
-       user.id,
+       actualUser.id,
      );
    }
 

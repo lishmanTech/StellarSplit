@@ -5,7 +5,9 @@ import {
   Delete,
   Param,
   Body,
+  Req,
 } from "@nestjs/common";
+import { Request } from "express";
 import { ShortLinksService } from "./short-links.service";
 import { GenerateLinkDto } from "./dto/generate-link.dto";
 import { NfcPayloadService } from "./nfc-payload.service";
@@ -20,8 +22,8 @@ export class ShortLinksController {
   ) {}
 
   @Post("generate")
-  generate(@Body() dto: GenerateLinkDto, @Req() req: AuthRequest) {
-    return this.service.generate(dto, req.user.wallet);
+  generate(@Body() dto: GenerateLinkDto, @CurrentUser() user: AuthUser) {
+    return this.service.generate(dto, user.walletAddress);
   }
 
   @Get(":shortCode/resolve")
